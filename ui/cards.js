@@ -5,16 +5,21 @@
 // Every card has [ open ] to jump to the terminal. Answers are typed into the session's own
 // terminal (Enter picks the highlighted "Yes", Esc is "No"), so the two always agree.
 
-const Cards = { plot: null, el: null };
+import { Garden } from './garden.js';
+import { pickPlot, renderList } from './sessions.js';
+import { tabOfPlot } from './state.js';
+import { invoke } from './tauri.js';
+
+export const Cards = { plot: null, el: null };
 
 // What a permission request is about, in one line.
-function describeTool(name, input = {}) {
+export function describeTool(name, input = {}) {
   const pick = input.command || input.file_path || input.url || input.pattern || input.path || input.query || input.description;
   return pick ? String(pick).replace(/\s+/g, ' ').slice(0, 160) : '';
 }
 
 // From hook events (app.js): remember what a "?" is about, and forget it when it's answered.
-function notePending(p, ev, raw) {
+export function notePending(p, ev, raw) {
   if (ev.event === 'PermissionRequest') p.pending = { kind: 'perm', tool: raw.tool_name, detail: describeTool(raw.tool_name, raw.tool_input) };
   else if (ev.event === 'PreToolUse' && raw.tool_name === 'AskUserQuestion') {
     const qs = raw.tool_input?.questions || [];
@@ -25,17 +30,17 @@ function notePending(p, ev, raw) {
   if (Cards.plot === p) renderCard();
 }
 
-function openCard(p) {
+export function openCard(p) {
   Cards.plot = p;
   renderCard();
 }
 
-function closeCard() {
+export function closeCard() {
   Cards.plot = null;
   if (Cards.el) Cards.el.classList.add('hidden');
 }
 
-function renderCard() {
+export function renderCard() {
   const p = Cards.plot;
   if (!p) return closeCard();
   if (!Cards.el) {
@@ -116,7 +121,7 @@ function renderCard() {
 }
 
 // Keep the card beside its mochi as the camera moves.
-function positionCard() {
+export function positionCard() {
   const p = Cards.plot, el = Cards.el;
   if (!p || !el || !p.m) return;
   const S = Garden.cam.zoom;

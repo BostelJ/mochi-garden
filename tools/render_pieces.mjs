@@ -4,12 +4,13 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import vm from 'node:vm';
 import { createCanvas, Image, loadImage } from '@napi-rs/canvas';
+import { asScript } from './ui-script.mjs';
 
 const ui = (f) => new URL('../ui/' + f, import.meta.url);
 globalThis.document = { createElement: () => createCanvas(1, 1), hidden: true };
 globalThis.Image = Image;
 const run = (code, name) => vm.runInThisContext(code, { filename: name });
-run(readFileSync(ui('sprites.js'), 'utf8'), 'sprites.js');
+run(asScript(readFileSync(ui('sprites.js'), 'utf8')), 'sprites.js');
 // the garden.js bits pieces.js uses
 run(`const TILE = 16;
 function hash(x, y, salt = 0) {
@@ -20,7 +21,7 @@ function hash(x, y, salt = 0) {
 // art images decode asynchronously here, so load the ones the pieces use up front
 const ART = { lantern_post: await loadImage(readFileSync(ui('art/lantern_post.png'))) };
 globalThis.artImage = (name) => ART[name] || new Image();
-run(readFileSync(ui('pieces.js'), 'utf8'), 'pieces.js');
+run(asScript(readFileSync(ui('pieces.js'), 'utf8')), 'pieces.js');
 const { PIECES, drawPiece, pieceTextAnchor, mochiSprite } = vm.runInThisContext('({ PIECES, drawPiece, pieceTextAnchor, mochiSprite })');
 
 const T = 16, S = 4; // tile px, output scale

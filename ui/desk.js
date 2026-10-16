@@ -4,11 +4,15 @@
 // behind, typing: keys press, the carriage slides along the line, the paper fills line by line,
 // and at the end of a line there's a ding and the carriage returns. A full page flutters away.
 
-const LINE_CHARS = 11;
-const PAGE_LINES = 5;
-const DESK_W = 40, DESK_H = 30;
+import { TILE, atHome } from './garden.js';
+import { Sound, tone } from './rewards.js';
+import { PLANK, prop } from './sprites.js';
 
-const DK = {
+export const LINE_CHARS = 11;
+export const PAGE_LINES = 5;
+export const DESK_W = 40, DESK_H = 30;
+
+export const DK = {
   o: '#3a2218', // outline
   w1: '#d39556', w2: '#b5733a', w3: '#8a5228', // wood: light, mid, dark
   knob: '#f2c14e',
@@ -20,11 +24,11 @@ const DK = {
 };
 
 // The desk stands in the plot's desk corner; its bottom-left, in world px.
-function deskOrigin(p) {
+export function deskOrigin(p) {
   return { x: p.x * TILE + 4, y: p.y * TILE + 40 };
 }
 
-function updateTypewriter(p, dt, t) {
+export function updateTypewriter(p, dt, t) {
   p.tw = p.tw || { col: 0, line: 0, key: 0, keyAt: -1, acc: 0, dingAt: -1, pages: [] };
   const tw = p.tw;
   const typing = p.built && p.live && p.activity === 'working' && atHome(p);
@@ -53,7 +57,7 @@ function updateTypewriter(p, dt, t) {
   tw.pages = tw.pages.filter((pg) => t - pg.t < 2.2);
 }
 
-function drawDesk(g, p, t) {
+export function drawDesk(g, p, t) {
   const d = deskOrigin(p);
   const x = d.x, y = d.y - DESK_H;
   if (!p.built) {
@@ -85,19 +89,19 @@ function drawDesk(g, p, t) {
   }
 }
 
-function px(g, x, y, w, h, c) {
+export function px(g, x, y, w, h, c) {
   g.fillStyle = c;
   g.fillRect(x, y, w, h);
 }
 
 // A filled rectangle with its four corner pixels cut, for rounded pixel shapes.
-function rounded(g, x, y, w, h, c) {
+export function rounded(g, x, y, w, h, c) {
   px(g, x + 1, y, w - 2, h, c);
   px(g, x, y + 1, w, h - 2, c);
 }
 
 // Desk (40 x 30, top-left at x, y): the plant and mug on top, the typewriter is drawn separately.
-function drawDeskBody(g, x, y) {
+export function drawDeskBody(g, x, y) {
   // legs
   for (const lx of [x + 3, x + 33]) {
     px(g, lx, y + 22, 4, 8, DK.o);
@@ -144,7 +148,7 @@ function drawDeskBody(g, x, y) {
 }
 
 // Cream typewriter (16 x 8 body at x, y) with its carriage, roller and paper above.
-function drawTypewriter(g, p, x, y, t) {
+export function drawTypewriter(g, p, x, y, t) {
   const tw = p.tw || { col: 0, line: 0, keyAt: -1, dingAt: -1 };
   // the carriage slides left as the line fills and snaps back on the ding
   const returning = t - tw.dingAt < 0.25;
@@ -184,8 +188,8 @@ function drawTypewriter(g, p, x, y, t) {
   }
 }
 
-let lastClack = 0;
-function clack() {
+export let lastClack = 0;
+export function clack() {
   if (!Sound.on || document.hidden) return;
   const now = performance.now();
   if (now - lastClack < 55) return;
@@ -193,7 +197,7 @@ function clack() {
   tone(1500 + Math.random() * 600, 0, { gain: 0.012, dur: 0.025, type: 'square', drop: 0.5 });
 }
 
-function ding() {
+export function ding() {
   if (!Sound.on || document.hidden) return;
   tone(2637, 0, { gain: 0.028, dur: 0.6 });
 }

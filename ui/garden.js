@@ -3,19 +3,35 @@
 // garden grows. Signs and labels are drawn over it at screen resolution so text stays sharp.
 // Reads `Garden.plots` (owned by app.js) and moves each plot's mochi.
 
-const TILE = 16;
-const PLOT_W = 6; // tiles
-const PLOT_H = 4;
-const WORLD_COLS = 80;
-const WORLD_ROWS = 56;
+import { outfitOf } from './build.js';
+import { closeCard, positionCard } from './cards.js';
+import { drawDesk, updateTypewriter } from './desk.js';
+import { drawDirt, drawFarmBack, drawLandTexts, farmJob, landBounds, landFits, landIndex, landItems, occupancy, sheetSprite, stepDirt, workFarmJob } from './farm.js';
+import { drawHelperLabels, drawHelpers, updateHelpers } from './helpers.js';
+import { activeStreak, drawFlame, drawStreakGlow } from './rewards.js';
+import { Seeds, drawFlyingSeeds, drawGroundSeeds, stepSeeds, updateSeeds } from './seeds.js';
+import { drawSkyLight, drawWeather, seasonPalette, updateSky, weekLeft } from './sky.js';
+import { drawHearts, visitTarget } from './social.js';
+import { BUBBLE_ASK, BUBBLE_BANG, FLAVOURS, PLANK, ZZZ, mochiSprite, prop } from './sprites.js';
+import { Quality } from './state.js';
+import { listen } from './tauri.js';
+import { SQUARE_H, SQUARE_W, drawSquareGround, drawTownLights, drawTownSign, ensureSquare, townItems } from './town.js';
+import { Usage } from './usage.js';
+import { WEAR, WEAR_ORDER, drawWear } from './wardrobe.js';
+
+export const TILE = 16;
+export const PLOT_W = 6; // tiles
+export const PLOT_H = 4;
+export const WORLD_COLS = 80;
+export const WORLD_ROWS = 56;
 
 // Lifetime-token thresholds for the things that come with age (the farm itself grows from seeds).
-const GROWTH = { lantern: 400e3, scarf: 600e3, beanie: 1.5e6, straw: 4e6 };
+export const GROWTH = { lantern: 400e3, scarf: 600e3, beanie: 1.5e6, straw: 4e6 };
 
-const ZOOM_MAX = 12; // device px per art px
-const ZOOM_MIN = 3;
+export const ZOOM_MAX = 12; // device px per art px
+export const ZOOM_MIN = 3;
 
-const Garden = {
+export const Garden = {
   plots: [],
   S: 5, // current zoom: screen px per art pixel
   cols: WORLD_COLS,
@@ -25,13 +41,13 @@ const Garden = {
   onPick: null,
 };
 
-function hash(x, y, salt = 0) {
+export function hash(x, y, salt = 0) {
   let h = (x * 374761393 + y * 668265263 + salt * 2246822519) | 0;
   h = Math.imul(h ^ (h >>> 13), 1274126177);
   return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
 }
 
-function initGarden(canvas, onPick) {
+export function initGarden(canvas, onPick) {
   Garden.canvas = canvas;
   Garden.ctx = canvas.getContext('2d');
   Garden.off = document.createElement('canvas');
@@ -76,7 +92,7 @@ function initGarden(canvas, onPick) {
     raf = requestAnimationFrame(frame);
   };
   raf = requestAnimationFrame(frame);
-  window.__TAURI__?.event.listen('main-visible', ({ payload }) => {
+  listen('main-visible', ({ payload }) => {
     Garden.hidden = !payload;
     if (!Garden.hidden) {
       last = performance.now();
@@ -86,14 +102,14 @@ function initGarden(canvas, onPick) {
 }
 
 // Anything moving (or about to) gets the full frame rate.
-function gardenBusy(t) {
+export function gardenBusy(t) {
   if (Garden.active || Garden.camMoving || Seeds.list.length || Garden.dirt.length) return true;
   if (Garden.partyAt && t - Garden.partyAt < 4) return true;
   if ((Usage.sunriseAt && t - Usage.sunriseAt < 3) || (Usage.springAt && t - Usage.springAt < 6)) return true;
   return false;
 }
 
-function resizeGarden() {
+export function resizeGarden() {
   const wrap = Garden.canvas.parentElement;
   const dpr = window.devicePixelRatio || 1;
   Garden.dpr = dpr;
@@ -108,7 +124,7 @@ function resizeGarden() {
 
 // Frame every placed plot (and any mochi still walking in) with a margin, at the largest whole
 // zoom that fits, so a lone first mochi fills the view and a big garden eases out to show it all.
-function cameraTarget() {
+export function cameraTarget() {
   const W = WORLD_COLS * TILE, H = WORLD_ROWS * TILE;
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
   for (const p of Garden.plots) {
@@ -142,7 +158,7 @@ function cameraTarget() {
   };
 }
 
-function updateCamera(dt) {
+export function updateCamera(dt) {
   const target = cameraTarget(), cam = Garden.cam;
   const k = 1 - Math.exp(-dt * 2.2);
   // Ease the zoom, keeping the target's centre steady while it changes.
@@ -158,19 +174,19 @@ function updateCamera(dt) {
 }
 
 // The part of the world in view, in world px.
-function viewRect() {
+export function viewRect() {
   const c = Garden.cam;
   return { x: c.x, y: c.y, w: Garden.viewW / c.zoom, h: Garden.viewH / c.zoom };
 }
 
-function toWorld(cssX, cssY) {
+export function toWorld(cssX, cssY) {
   return { x: Garden.cam.x + cssX / Garden.cam.zoom, y: Garden.cam.y + cssY / Garden.cam.zoom };
 }
 
 // Meadow ---------------------------------------------------------------------------------
 
 // `pal` comes from the season (sky.js): base colour, speck colours, tuft colours.
-function drawGrass(cols, rows, pal = seasonPalette(weekLeft())) {
+export function drawGrass(cols, rows, pal = seasonPalette(weekLeft())) {
   const c = document.createElement('canvas');
   c.width = cols * TILE;
   c.height = rows * TILE;
@@ -217,7 +233,7 @@ function drawGrass(cols, rows, pal = seasonPalette(weekLeft())) {
 // The first plot goes in the middle of the world; each new one settles near the others, with
 // room around it to grow (a garden is whatever shape its session builds: farm.js, build.js), so
 // the garden grows outward and the camera eases out to keep it all in view.
-function placePlot(plot) {
+export function placePlot(plot) {
   plot.pieces = plot.pieces || [];
   const others = Garden.plots.filter((p) => p !== plot && p.x != null);
   const cx = Math.floor(WORLD_COLS / 2 - PLOT_W / 2), cy = Math.floor(WORLD_ROWS / 2 - PLOT_H / 2);
@@ -247,28 +263,28 @@ function placePlot(plot) {
 }
 
 // A packed-away garden coming back keeps its old spot unless something has moved in since.
-function returnPlot(plot) {
+export function returnPlot(plot) {
   if (plot.x == null) return;
   if (!landFits(plot, plot.x, plot.y, occupancy(plot, 1))) placePlot(plot);
 }
 
 // Asleep at its desk: an open tab whose claude has stopped (not one walking in or packing up).
-function isAsleep(p) {
+export function isAsleep(p) {
   return !p.live && p.activity !== 'arriving' && p.activity !== 'leaving';
 }
 
 // Where a plot's mochi sits: behind its desk; asleep, it naps beside it.
-function homeSpot(plot) {
+export function homeSpot(plot) {
   const asleep = isAsleep(plot);
   // in front of the desk, facing the typewriter (asleep: slumped a little lower)
   return asleep ? { x: plot.x * TILE + 18, y: plot.y * TILE + 37 } : { x: plot.x * TILE + 18, y: plot.y * TILE + 33 };
 }
 
-function atHome(p) {
+export function atHome(p) {
   return p.x != null && p.m && !p.m.walking && Math.hypot(p.m.x - homeSpot(p).x, p.m.y - homeSpot(p).y) < 1;
 }
 
-function plotAt(cssX, cssY) {
+export function plotAt(cssX, cssY) {
   const { x: lx, y: ly } = toWorld(cssX, cssY);
   for (const p of Garden.plots) {
     const m = p.m;
@@ -283,7 +299,7 @@ function plotAt(cssX, cssY) {
 
 // Behaviour ------------------------------------------------------------------------------
 
-function spawnMochi(plot, fromEdge) {
+export function spawnMochi(plot, fromEdge) {
   if (fromEdge) {
     // walks in from the left edge of whatever is in view
     const v = viewRect();
@@ -295,7 +311,7 @@ function spawnMochi(plot, fromEdge) {
   }
 }
 
-function updateGarden(dt, t) {
+export function updateGarden(dt, t) {
   updateCamera(dt);
   Garden.active = false;
   if (!Garden.squareCheck || t - Garden.squareCheck > 1) {
@@ -362,7 +378,7 @@ function updateGarden(dt, t) {
 
 // Drawing --------------------------------------------------------------------------------
 
-function drawGarden(t) {
+export function drawGarden(t) {
   const { octx: g, off, ctx, dpr, cam } = Garden;
   const S = cam.zoom;
   g.imageSmoothingEnabled = false;
@@ -415,14 +431,14 @@ function drawGarden(t) {
 }
 
 // Clothes it chose (build.js dress), or what its age earned it; back items go under the body.
-function drawOutfit(g, p, x, y, pose, layer) {
+export function drawOutfit(g, p, x, y, pose, layer) {
   const o = outfitOf(p);
   // seen from behind, a cape or backpack covers the body instead of peeking out from under it
   const order = pose === 'back' ? WEAR_ORDER.fromBehind : WEAR_ORDER;
   for (const slot of order[layer]) if (o[slot] && WEAR[o[slot].i]) drawWear(g, o[slot].i, o[slot].c, x, y, pose);
 }
 
-function drawMochi(g, p, t) {
+export function drawMochi(g, p, t) {
   const m = p.m;
   const asleep = isAsleep(p);
   let x = Math.round(m.x), y = Math.round(m.y);
@@ -503,20 +519,20 @@ function drawMochi(g, p, t) {
 }
 
 // Signs stand above the farm half of the plot, clear of the mochi's bubble.
-function signX(p) {
+export function signX(p) {
   return (p.x + 3) * TILE + 1;
 }
 
 // The sign is the seed packet the plot grew from, in the mochi's flavour, on a stake: a cream
 // zigzag fold on top, the title, then a cream band with tokens and the streak flame. Text has a
 // floor in screen px, so the packet is sized from the text, not just from S.
-const SIGN_FONT = "'Cascadia Mono', Consolas, 'SF Mono', Menlo, monospace";
-const SIGN_INK = '#3a2218';
-const SIGN_CREAM = '#fff6e2';
-const signBigPx = (S) => Math.max(9, 4 * S);
-const signSmallPx = (S) => Math.max(8, 3.4 * S);
+export const SIGN_FONT = "'Cascadia Mono', Consolas, 'SF Mono', Menlo, monospace";
+export const SIGN_INK = '#3a2218';
+export const SIGN_CREAM = '#fff6e2';
+export const signBigPx = (S) => Math.max(9, 4 * S);
+export const signSmallPx = (S) => Math.max(8, 3.4 * S);
 
-function drawSign(ctx, p) {
+export function drawSign(ctx, p) {
   const S = Garden.S;
   const px = signX(p) * S, py = (p.y * TILE + 1) * S;
   const big = `bold ${signBigPx(S)}px ${SIGN_FONT}`;
@@ -587,7 +603,7 @@ function drawSign(ctx, p) {
   }
 }
 
-function drawMist(ctx, w, h) {
+export function drawMist(ctx, w, h) {
   const mist = cachedLayer('mist', '', w, h, (g) => {
     const r = Math.max(w, h) * 0.75;
     const grad = g.createRadialGradient(w / 2, h / 2, r * 0.55, w / 2, h / 2, r);
@@ -601,8 +617,8 @@ function drawMist(ctx, w, h) {
 
 // Full-view gradient layers (mist, sunlight) only change when the view resizes or the light
 // moves, so each is painted once into a canvas and reused instead of re-rasterized every frame.
-const layerCache = new Map();
-function cachedLayer(name, key, w, h, paint) {
+export const layerCache = new Map();
+export function cachedLayer(name, key, w, h, paint) {
   const dpr = Garden.dpr || 1;
   const k = `${key}|${w}x${h}@${dpr}`;
   let l = layerCache.get(name);
@@ -619,7 +635,7 @@ function cachedLayer(name, key, w, h, paint) {
   return l.canvas;
 }
 
-function fmtTokens(n) {
+export function fmtTokens(n) {
   if (n >= 1e6) return (n / 1e6).toFixed(n >= 1e7 ? 0 : 1) + 'M tokens';
   if (n >= 1e3) return (n / 1e3).toFixed(n >= 1e4 ? 0 : 1) + 'k tokens';
   return n + ' tokens';

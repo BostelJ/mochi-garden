@@ -4,13 +4,15 @@
 // (the flattened sprite, which garden.js draws at y + 3; pass the same x, y as the awake mochi).
 // Needs sprites.js (gridCanvas, FLAVOURS, shadeHex).
 
-const WEAR_COLOURS = {
+import { FLAVOURS, gridCanvas, shadeHex } from './sprites.js';
+
+export const WEAR_COLOURS = {
   red: '#e0665c', orange: '#f08a3c', yellow: '#f2c14e', green: '#7fb04f', mint: '#8fd6b4', teal: '#4fa3a5',
   sky: '#9fd3f2', blue: '#6f9be0', navy: '#3f5a8a', purple: '#9a6bc9', lilac: '#c3a6e6', pink: '#f29ac2',
   white: '#f6f1e4', cream: '#efe6cf', grey: '#9a9a9a', black: '#3d4045', brown: '#8a5228', tan: '#d39556', gold: '#e9b949',
 };
 
-const WEAR = {
+export const WEAR = {
   // head
   beanie: { slot: 'head', colour: true, dflt: 'red', desc: 'a knitted beanie' },
   strawhat: { slot: 'head', colour: true, dflt: 'red', desc: 'a straw hat (colour = its band)' },
@@ -49,13 +51,13 @@ const WEAR = {
 
 // Draw order around the mochi body. From behind ('back' pose) a back item covers the body, so
 // it's drawn over it there.
-const WEAR_ORDER = { under: ['back'], over: ['neck', 'face', 'head'], fromBehind: { under: [], over: ['neck', 'back', 'head'] } };
+export const WEAR_ORDER = { under: ['back'], over: ['neck', 'face', 'head'], fromBehind: { under: [], over: ['neck', 'back', 'head'] } };
 
-const Wardrobe = (() => {
+export const Wardrobe = (() => {
   const INK = '#3a2218';
   const FIXED = {
     o: INK,
-    h: '#fff6c2', H: '#f8dc84', // halo glow
+    h: '#fff6c2', J: '#f8dc84', // halo glow (J: H is the leaf highlight below)
     y: '#f2c14e', Y: '#c9962e', V: '#f8dc84', // gold
     n: '#e9c46a', N: '#c9a24a', // straw
     x: '#ffffff', W: '#d9d0bd', // white
@@ -137,7 +139,7 @@ const Wardrobe = (() => {
     beret: { idle: at(inked(['......c....', '..LCCCCCc..', 'LCCCCCCCCCc', '..ccccccc..']), 0, -3) },
     buckethat: { idle: at(inked(['...LCCCc...', '..LCCCCCc..', '..ccccccc..', '.LCCCCCCCc.', 'LCCCCCCCCCc']), 0, -3) },
     chefhat: { idle: at(inked(['.xx.xxx..', 'xxxxxxxxx', 'xxxxxxxxW', '.xWxxxxW.', '.xxxxxxW.', '.xxxxxxW.', '.WWWWWWW.']), 1, -6) },
-    halo: { idle: at(['...hhhhh...', '.hh.....hh.', 'Hy.......yH', '.HY.....YH.', '...YYYYY...'], 1, -7) },
+    halo: { idle: at(['...hhhhh...', '.hh.....hh.', 'Jy.......yJ', '.JY.....YJ.', '...YYYYY...'], 1, -7) },
     // neck
     scarf: { idle: at(SCARF, 0, 7), sleep: at(SCARF, 0, 8) },
     bowtie: { idle: at(inked(['LC.Cc', 'CCcCc', 'Cc.cc']), 3, 7), back: null },
@@ -248,7 +250,7 @@ const Wardrobe = (() => {
 })();
 
 // '#rrggbb', a WEAR_COLOURS name or a FLAVOURS name -> hex (or null).
-function wearColour(c) {
+export function wearColour(c) {
   if (!c) return null;
   if (c[0] === '#') return c;
   if (WEAR_COLOURS[c]) return WEAR_COLOURS[c];
@@ -258,11 +260,11 @@ function wearColour(c) {
 
 // Draw one worn item on a mochi whose (awake) sprite top-left is at (x, y). colourHex: '#rrggbb'
 // or a colour name; ignored for fixed-colour items. pose: 'idle' | 'back' | 'sleep'.
-function drawWear(g, item, colourHex, x, y, pose) {
+export function drawWear(g, item, colourHex, x, y, pose) {
   Wardrobe.draw(g, item, colourHex, x, y, pose);
 }
 
 // The item on its own (idle view), on a small transparent canvas for menus.
-function wearIcon(item, colourHex) {
+export function wearIcon(item, colourHex) {
   return Wardrobe.icon(item, colourHex);
 }

@@ -2,15 +2,19 @@
 // bounce, twinkle and sink into the soil. New tokens land in the plot's `bank` (app.js) and are
 // paid out over a few seconds, so one big reply becomes a long spray rather than one blip.
 
-const SEED_GRAVITY = 420; // logical px / s^2
-const SEED_TRICKLE = 1.2; // seeds per second while a mochi is working, even between token reads
-const TOKENS_PER_SEED = 120; // above the trickle, one seed per this many tokens paid out...
-const SEED_RATE_MAX = 40; // ...up to this many seeds per second
-const SEED_CAP = 700; // most seeds alive at once across the garden
+import { absorbSeed, landingSpot } from './farm.js';
+import { seedPop, streakLevel } from './rewards.js';
+import { FLAVOURS, FLAVOUR_ORDER } from './sprites.js';
 
-const Seeds = { list: [] };
+export const SEED_GRAVITY = 420; // logical px / s^2
+export const SEED_TRICKLE = 1.2; // seeds per second while a mochi is working, even between token reads
+export const TOKENS_PER_SEED = 120; // above the trickle, one seed per this many tokens paid out...
+export const SEED_RATE_MAX = 40; // ...up to this many seeds per second
+export const SEED_CAP = 700; // most seeds alive at once across the garden
 
-function updateSeeds(p, dt, t) {
+export const Seeds = { list: [] };
+
+export function updateSeeds(p, dt, t) {
   const m = p.m;
   const placed = p.x != null && m && !m.walking;
   if (!p.live) p.bank = 0;
@@ -36,7 +40,7 @@ function updateSeeds(p, dt, t) {
 }
 
 // `from` is a helper mochi's position when the seed is its own (seeds.js callers pass nothing).
-function spawnSeed(p, t, from) {
+export function spawnSeed(p, t, from) {
   const m = p.m;
   const sx = from ? from.x : m.x + 6, sy = from ? from.y : m.y + 1;
   const { x: tx, y: ty } = landingSpot(p); // farm.js: mostly onto dug soil
@@ -49,7 +53,7 @@ function spawnSeed(p, t, from) {
 }
 
 // Streak 0: mostly gold with the mochi's colour; 1+: almost all gold; 3: every flavour.
-function seedColour(p, level) {
+export function seedColour(p, level) {
   const f = FLAVOURS[p.flavour] || FLAVOURS.terracotta;
   const r = Math.random();
   if (level >= 3 && r < 0.6) return FLAVOURS[FLAVOUR_ORDER[Math.floor(Math.random() * FLAVOUR_ORDER.length)]].b;
@@ -57,7 +61,7 @@ function seedColour(p, level) {
   return r < gold ? '#ffd45c' : r < 0.9 ? f.b : '#fff6d8';
 }
 
-function stepSeeds(dt, t) {
+export function stepSeeds(dt, t) {
   for (const s of Seeds.list) {
     if (s.state === 'fly') {
       s.vy += SEED_GRAVITY * dt;
@@ -83,7 +87,7 @@ function stepSeeds(dt, t) {
 }
 
 // A seed is a 4x4 outlined gem with a white highlight, so it reads against the grass.
-function drawGem(g, x, y, colour) {
+export function drawGem(g, x, y, colour) {
   g.fillStyle = '#3a2218';
   g.fillRect(x + 1, y, 2, 1);
   g.fillRect(x + 1, y + 3, 2, 1);
@@ -96,7 +100,7 @@ function drawGem(g, x, y, colour) {
 }
 
 // Seeds on the ground sit under benches and mochis; seeds in the air fly over everything.
-function drawGroundSeeds(g, t) {
+export function drawGroundSeeds(g, t) {
   for (const s of Seeds.list) {
     if (s.state === 'fly') continue;
     const x = Math.round(s.x), y = Math.round(s.y);
@@ -129,7 +133,7 @@ function drawGroundSeeds(g, t) {
   }
 }
 
-function drawFlyingSeeds(g, t) {
+export function drawFlyingSeeds(g, t) {
   for (const s of Seeds.list) {
     if (s.state !== 'fly') continue;
     if (s.trail) {

@@ -3,8 +3,12 @@
 // What's left of the week is the season: spring, summer, autumn, winter. Resets bring a sunrise
 // and a burst of spring.
 
+import { Garden, TILE, cachedLayer, drawGrass, viewRect } from './garden.js';
+import { townLightSpots } from './town.js';
+import { Usage, checkResets, current, left, renderUsageBar } from './usage.js';
+
 // Light: a multiply tint over the scene, by fraction of the 5-hour window left.
-const LIGHT = [
+export const LIGHT = [
   [1.0, [236, 242, 255]], // early morning, cool
   [0.8, [255, 255, 255]],
   [0.5, [255, 255, 255]], // midday
@@ -15,7 +19,7 @@ const LIGHT = [
 ];
 
 // Season: grass palettes by fraction of the week left.
-const SEASONS = [
+export const SEASONS = [
   [1.0, { base: '#a7c274', specks: ['#b2ca80', '#9cb768', '#a0bb6c', '#b0c87e'], tuft: '#6f9447', tuftHi: '#86a957' }], // spring
   [0.62, { base: '#94bb5c', specks: ['#a3c86a', '#88ad52', '#8cb256', '#9fc465'], tuft: '#5d8a38', tuftHi: '#78a347' }], // summer
   [0.36, { base: '#c0b067', specks: ['#ccb96f', '#b49f57', '#c7a85a', '#d0bf78'], tuft: '#9a7d3c', tuftHi: '#b38f45' }], // autumn
@@ -23,32 +27,32 @@ const SEASONS = [
   [0.0, { base: '#e4eaea', specks: ['#f4f7f7', '#d6dede', '#ffffff', '#cdd6d6'], tuft: '#a9b6b1', tuftHi: '#c3cdc9' }],
 ];
 
-const Sky = { particles: [], grassKey: null };
+export const Sky = { particles: [], grassKey: null };
 
 // With no numbers yet, it's a calm late-morning spring day.
-function fiveLeft() {
+export function fiveLeft() {
   return current('five') ? left('five') : 0.65;
 }
-function weekLeft() {
+export function weekLeft() {
   return current('week') ? left('week') : 0.85;
 }
 
-function lerp(a, b, k) {
+export function lerp(a, b, k) {
   return a + (b - a) * k;
 }
-function lerpRgb(a, b, k) {
+export function lerpRgb(a, b, k) {
   return a.map((v, i) => Math.round(lerp(v, b[i], k)));
 }
-function hexRgb(h) {
+export function hexRgb(h) {
   const n = parseInt(h.slice(1), 16);
   return [n >> 16, (n >> 8) & 255, n & 255];
 }
-function rgbHex(c) {
+export function rgbHex(c) {
   return '#' + c.map((v) => v.toString(16).padStart(2, '0')).join('');
 }
 
 // Piecewise-linear lookup over [value, payload] stops sorted high to low.
-function stopsAt(stops, v, mix) {
+export function stopsAt(stops, v, mix) {
   for (let i = 0; i < stops.length - 1; i++) {
     const [a, pa] = stops[i], [b, pb] = stops[i + 1];
     if (v <= a && v >= b) return mix(pa, pb, a === b ? 0 : (a - v) / (a - b));
@@ -56,7 +60,7 @@ function stopsAt(stops, v, mix) {
   return v > stops[0][0] ? stops[0][1] : stops[stops.length - 1][1];
 }
 
-function seasonPalette(w) {
+export function seasonPalette(w) {
   return stopsAt(SEASONS, w, (a, b, k) => ({
     base: rgbHex(lerpRgb(hexRgb(a.base), hexRgb(b.base), k)),
     specks: a.specks.map((s, i) => rgbHex(lerpRgb(hexRgb(s), hexRgb(b.specks[i]), k))),
@@ -65,21 +69,21 @@ function seasonPalette(w) {
   }));
 }
 
-function seasonName(w) {
+export function seasonName(w) {
   return w > 0.7 ? 'spring' : w > 0.45 ? 'summer' : w > 0.2 ? 'autumn' : 'winter';
 }
 
 // Bar colours for the side panel: sun gold fading to dusk; the season's colour.
-function fiveColour() {
+export function fiveColour() {
   const r = fiveLeft();
   return r > 0.35 ? '#f2c14e' : r > 0.12 ? '#e98a6b' : '#8f8fd6';
 }
-function seasonColour() {
+export function seasonColour() {
   return { spring: '#f29ac2', summer: '#8db580', autumn: '#e0913c', winter: '#bfdbe8' }[seasonName(weekLeft())];
 }
 
 // The grass is re-rendered when the season moves on (in small steps, so it shifts gradually).
-function seasonGrass() {
+export function seasonGrass() {
   const key = Math.round(weekLeft() * 25) + ':' + Garden.cols + 'x' + Garden.rows;
   if (key !== Sky.grassKey) {
     Sky.grassKey = key;
@@ -90,7 +94,7 @@ function seasonGrass() {
 
 // Weather -----------------------------------------------------------------------------------
 
-function updateSky(dt, t) {
+export function updateSky(dt, t) {
   checkResets(t);
   seasonGrass();
   const v = viewRect(); // weather only where you're looking
@@ -123,7 +127,7 @@ function updateSky(dt, t) {
   Sky.particles = Sky.particles.filter((p) => p.age < p.life && p.y < v.y + v.h + 6 && (want[p.kind] || 0) >= 0 && !(p.kind !== 'petal' && !want[p.kind] && p.age > 1));
 }
 
-function newParticle(kind, v, anywhere) {
+export function newParticle(kind, v, anywhere) {
   const p = { kind, age: 0, ph: Math.random() * 6, f: 1 + Math.random() * 2 };
   if (kind === 'firefly' || kind === 'butterfly') {
     Object.assign(p, { x: v.x + Math.random() * v.w, y: v.y + Math.random() * v.h, v: kind === 'firefly' ? 6 : 14, life: 8 + Math.random() * 8 });
@@ -142,7 +146,7 @@ function newParticle(kind, v, anywhere) {
   return p;
 }
 
-function drawWeather(g, t) {
+export function drawWeather(g, t) {
   for (const p of Sky.particles) {
     const x = Math.round(p.x), y = Math.round(p.y);
     if (p.kind === 'firefly') {
@@ -173,7 +177,7 @@ function drawWeather(g, t) {
 
 // Light ----------------------------------------------------------------------------------------
 
-function drawSkyLight(ctx, w, h, t) {
+export function drawSkyLight(ctx, w, h, t) {
   const r = fiveLeft();
   const tint = stopsAt(LIGHT, r, (a, b, k) => lerpRgb(a, b, k));
   ctx.save();

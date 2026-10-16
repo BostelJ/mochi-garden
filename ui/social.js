@@ -2,9 +2,12 @@
 // then wanders off to visit a neighbour's plot or the town square, hangs out for a few seconds
 // with little hearts, and heads home. A prompt calls it straight back to its desk.
 
-const VISIT_EVERY = 45; // seconds, on average, between visits for an idle mochi
+import { Garden, TILE, atHome } from './garden.js';
+import { prop } from './sprites.js';
 
-function visitTarget(p, dt, t) {
+export const VISIT_EVERY = 45; // seconds, on average, between visits for an idle mochi
+
+export function visitTarget(p, dt, t) {
   const m = p.m;
   if (!p.live || p.activity !== 'idle' || !p.built) {
     m.visit = null;
@@ -41,10 +44,10 @@ function visitTarget(p, dt, t) {
   return m.visit ? { x, y } : null;
 }
 
-const HEART = ['.p.p.', 'ppppp', 'ppppp', '.ppp.', '..p..'];
+export const HEART = ['.p.p.', 'ppppp', 'ppppp', '.ppp.', '..p..'];
 
 // Little hearts over a mochi that's visiting, or being visited.
-function drawHearts(g, p, x, y, t) {
+export function drawHearts(g, p, x, y, t) {
   const m = p.m;
   const on = (m.heartAt && t - m.heartAt < 0.2) || (m.greetAt && t - m.greetAt < 2.5);
   if (!on || p.bubble) return;

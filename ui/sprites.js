@@ -1,10 +1,10 @@
 // Pixel art for Mochi Garden, drawn from hand-made pixel grids so every sprite is exact.
 // Grids: '.' empty, 'o' outline, 'b' body, 's' body shade, 'w' white, 'e' eye, 'p' blush.
 
-const OUTLINE = '#3a2218';
+export const OUTLINE = '#3a2218';
 
 // The approved mochi: a round ~13x11 ball, no limbs, no mouth, shiny 2x2 eyes, blush.
-const MOCHI = [
+export const MOCHI = [
   '....ooooo....',
   '..oobbbbboo..',
   '.obbbbbbbbbo.',
@@ -18,10 +18,10 @@ const MOCHI = [
   '....ooooo....',
 ];
 // Eyes: dark 2x2 with a white catchlight top-right.
-const EYE_PIXELS = [[3, 4, 'e'], [4, 4, 'w'], [3, 5, 'e'], [4, 5, 'e'], [8, 4, 'e'], [9, 4, 'w'], [8, 5, 'e'], [9, 5, 'e']];
+export const EYE_PIXELS = [[3, 4, 'e'], [4, 4, 'w'], [3, 5, 'e'], [4, 5, 'e'], [8, 4, 'e'], [9, 4, 'w'], [8, 5, 'e'], [9, 5, 'e']];
 
 // Asleep: flattened, eyes closed as short lines.
-const MOCHI_SLEEP = [
+export const MOCHI_SLEEP = [
   '...ooooooo...',
   '.oobbbbbbboo.',
   'obbbbbbbbbbbo',
@@ -32,7 +32,7 @@ const MOCHI_SLEEP = [
   '...ooooooo...',
 ];
 
-const FLAVOURS = {
+export const FLAVOURS = {
   terracotta: { b: '#d97757', s: '#b85c3e', p: '#f49aab' },
   matcha: { b: '#8db580', s: '#6e9864', p: '#f2a3ad' },
   strawberry: { b: '#ee8fa3', s: '#d06f86', p: '#e5607e' },
@@ -42,9 +42,9 @@ const FLAVOURS = {
   vanilla: { b: '#f3ebdd', s: '#d9cdb8', p: '#f4a7b3' },
   soda: { b: '#7fb8e8', s: '#5f99cc', p: '#f3a6bd' },
 };
-const FLAVOUR_ORDER = ['terracotta', 'matcha', 'strawberry', 'ube', 'mango', 'soda', 'vanilla', 'sesame'];
+export const FLAVOUR_ORDER = ['terracotta', 'matcha', 'strawberry', 'ube', 'mango', 'soda', 'vanilla', 'sesame'];
 
-function gridCanvas(rows, colourOf) {
+export function gridCanvas(rows, colourOf) {
   const c = document.createElement('canvas');
   c.width = rows[0].length;
   c.height = rows.length;
@@ -60,8 +60,8 @@ function gridCanvas(rows, colourOf) {
   return c;
 }
 
-const spriteCache = new Map();
-function mochiSprite(flavour, pose) {
+export const spriteCache = new Map();
+export function mochiSprite(flavour, pose) {
   const key = flavour + ':' + pose;
   if (spriteCache.has(key)) return spriteCache.get(key);
   const f = FLAVOURS[flavour] || FLAVOURS.terracotta;
@@ -91,7 +91,7 @@ function mochiSprite(flavour, pose) {
 
 // Props --------------------------------------------------------------------------------
 
-const PALETTE = {
+export const PALETTE = {
   o: OUTLINE, w: '#ffffff', W: '#f6f1e4',
   g: '#8f9399', G: '#5f6369', k: '#3d4045', // laptop
   d: '#a0703f', D: '#6b4a2b', l: '#c48d55', // wood
@@ -100,16 +100,16 @@ const PALETTE = {
   r: '#e0665c', y: '#f2c14e', v: '#b48ad6', // flowers
   L: '#f6d77a', // lantern glow
 };
-const pal = (ch) => PALETTE[ch];
+export const pal = (ch) => PALETTE[ch];
 
-const LAPTOP = ['..oooooo', '.ogggggo', '.ogGGGgo', '.ogggggo', 'oookkkoo', 'okkkkkko', 'oooooooo'];
+export const LAPTOP = ['..oooooo', '.ogggggo', '.ogGGGgo', '.ogggggo', 'oookkkoo', 'okkkkkko', 'oooooooo'];
 
-const BUBBLE_BANG = ['.ooooooo.', 'oWWWWWWWo', 'oWWWoWWWo', 'oWWWoWWWo', 'oWWWoWWWo', 'oWWWWWWWo', 'oWWWoWWWo', '.ooooooo.', '..oo.....', '..o......'];
-const BUBBLE_ASK = ['.ooooooo.', 'oWWWWWWWo', 'oWWoooWWo', 'oWWWWoWWo', 'oWWWooWWo', 'oWWWWWWWo', 'oWWWoWWWo', '.ooooooo.', '..oo.....', '..o......'];
-const ZZZ = ['oooo', '..o.', '.o..', 'oooo'];
+export const BUBBLE_BANG = ['.ooooooo.', 'oWWWWWWWo', 'oWWWoWWWo', 'oWWWoWWWo', 'oWWWoWWWo', 'oWWWWWWWo', 'oWWWoWWWo', '.ooooooo.', '..oo.....', '..o......'];
+export const BUBBLE_ASK = ['.ooooooo.', 'oWWWWWWWo', 'oWWoooWWo', 'oWWWWoWWo', 'oWWWooWWo', 'oWWWWWWWo', 'oWWWoWWWo', '.ooooooo.', '..oo.....', '..o......'];
+export const ZZZ = ['oooo', '..o.', '.o..', 'oooo'];
 
 // Bench, two tiles wide, built in stages: legs, frame, seat planks.
-const BENCH = [
+export const BENCH = [
   '..oooooooooooooooooooo..',
   '.oddddddddddddddddddddo.',
   '.olllllllllllllllllllllo',
@@ -121,24 +121,24 @@ const BENCH = [
   '...ooo............ooo...',
 ];
 
-const SIGN_POST = ['oDo', 'oDo', 'oDo', 'oDo', 'oDo', 'oDo', 'ooo'];
-const SEEDLING = ['.T.T.', 'oTtTo', '..t..', '..t..'];
-const FLOWER = ['.r.', 'ryr', '.r.', '.t.'];
-const LANTERN = ['.ooo.', 'oLLLo', 'oLyLo', 'oLLLo', '.ooo.', '..D..', '..D..', '.ooo.'];
-const PLANK = ['oooooooo', 'olllllld', 'oooooooo'];
+export const SIGN_POST = ['oDo', 'oDo', 'oDo', 'oDo', 'oDo', 'oDo', 'ooo'];
+export const SEEDLING = ['.T.T.', 'oTtTo', '..t..', '..t..'];
+export const FLOWER = ['.r.', 'ryr', '.r.', '.t.'];
+export const LANTERN = ['.ooo.', 'oLLLo', 'oLyLo', 'oLLLo', '.ooo.', '..D..', '..D..', '.ooo.'];
+export const PLANK = ['oooooooo', 'olllllld', 'oooooooo'];
 
-const propCache = new Map();
-function prop(name, rows) {
+export const propCache = new Map();
+export function prop(name, rows) {
   if (!propCache.has(name)) propCache.set(name, gridCanvas(rows, pal));
   return propCache.get(name);
 }
 
 // Accessories earned with maturity, drawn over the mochi (13 px wide sprite space).
-const SCARF = { rows: ['.ooooooooooo.', 'ocCcCcCcCcCco', '.oooooooocCo.', '........oco..'], y: 7 };
-const BEANIE = { rows: ['.....ooo.....', '....oCCCo....', '..ooCCCCCoo..', '.oCCCCCCCCCo.', 'ocCcCcCcCcCco', 'ooooooooooooo'], y: -4 };
-const STRAW = { rows: ['....ooooo....', '...oyyyyyo...', '..oyyyyyyyo..', '..orrrrrrro..', 'oyyyyyyyyyyyo', 'ooooooooooooo'], y: -4 };
+export const SCARF = { rows: ['.ooooooooooo.', 'ocCcCcCcCcCco', '.oooooooocCo.', '........oco..'], y: 7 };
+export const BEANIE = { rows: ['.....ooo.....', '....oCCCo....', '..ooCCCCCoo..', '.oCCCCCCCCCo.', 'ocCcCcCcCcCco', 'ooooooooooooo'], y: -4 };
+export const STRAW = { rows: ['....ooooo....', '...oyyyyyo...', '..oyyyyyyyo..', '..orrrrrrro..', 'oyyyyyyyyyyyo', 'ooooooooooooo'], y: -4 };
 
-function accessorySprite(acc, colour) {
+export function accessorySprite(acc, colour) {
   const key = 'acc:' + acc + ':' + colour;
   if (spriteCache.has(key)) return spriteCache.get(key);
   const def = { scarf: SCARF, beanie: BEANIE, straw: STRAW }[acc];
@@ -148,7 +148,7 @@ function accessorySprite(acc, colour) {
   return c;
 }
 
-function shadeHex(hex, amt) {
+export function shadeHex(hex, amt) {
   const n = parseInt(hex.slice(1), 16);
   const ch = (v) => Math.max(0, Math.min(255, Math.round(v + (amt < 0 ? v * amt : (255 - v) * amt))));
   const r = ch(n >> 16), g = ch((n >> 8) & 255), b = ch(n & 255);
@@ -156,9 +156,9 @@ function shadeHex(hex, amt) {
 }
 
 // Art extracted from approved concept sheets (tools/extract_*.py), loaded from ui/art.
-function artImage(name) {
+export function artImage(name) {
   const img = new Image();
   img.src = `art/${name}.png`;
   return img;
 }
-const ready = (img) => img.complete && img.naturalWidth > 0;
+export const ready = (img) => img.complete && img.naturalWidth > 0;

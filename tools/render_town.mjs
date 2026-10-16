@@ -5,6 +5,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import vm from 'node:vm';
 import { createCanvas } from '@napi-rs/canvas';
+import { asScript } from './ui-script.mjs';
 
 const ui = (f) => new URL('../ui/' + f, import.meta.url);
 const S = 4, TW = 10, TH = 8, W = TW * 16, H = TH * 16, SX = 1, SY = 2; // panel in tiles, square's tile
@@ -21,7 +22,7 @@ const fmtTokens = (n) => (n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : Math.round(n /
 
 function world(townSrc) {
   const ctx = vm.createContext({ document: { createElement: () => createCanvas(1, 1), hidden: true }, Math, console });
-  for (const [name, src] of [['sprites.js', readFileSync(ui('sprites.js'), 'utf8')], ['garden-bits.js', GARDEN_BITS], ['pieces.js', readFileSync(ui('pieces.js'), 'utf8')], ['town.js', townSrc]]) vm.runInContext(src, ctx, { filename: name });
+  for (const [name, src] of [['sprites.js', readFileSync(ui('sprites.js'), 'utf8')], ['garden-bits.js', GARDEN_BITS], ['pieces.js', readFileSync(ui('pieces.js'), 'utf8')], ['town.js', townSrc]]) vm.runInContext(asScript(src), ctx, { filename: name });
   return vm.runInContext('({ Garden, townItems, drawSquareGround, drawTownLights, drawTownSign, mochiSprite, TOWN, townLightSpots: typeof townLightSpots === "function" ? townLightSpots : null })', ctx);
 }
 

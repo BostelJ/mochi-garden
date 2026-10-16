@@ -3,10 +3,16 @@
 // and works beside the plot. When the subagent finishes, the helper hops home, merges back in,
 // and its tokens arrive in one burst of seeds. Helpers are live-only (not saved).
 
-const MINI = ['..ooo..', '.obbbo.', 'obebebo', 'opbbbpo', 'obbbbso', '.ossso.', '..ooo..'];
-const HELPER_GRAVITY = 420;
+import { Garden, PLOT_H, TILE, toWorld } from './garden.js';
+import { noteWeekTokens } from './harvest.js';
+import { Sound, tone } from './rewards.js';
+import { SEED_CAP, Seeds, spawnSeed } from './seeds.js';
+import { FLAVOURS, OUTLINE, gridCanvas, spriteCache } from './sprites.js';
 
-function miniSprite(flavour) {
+export const MINI = ['..ooo..', '.obbbo.', 'obebebo', 'opbbbpo', 'obbbbso', '.ossso.', '..ooo..'];
+export const HELPER_GRAVITY = 420;
+
+export function miniSprite(flavour) {
   const key = 'mini:' + flavour;
   if (spriteCache.has(key)) return spriteCache.get(key);
   const f = FLAVOURS[flavour] || FLAVOURS.terracotta;
@@ -16,12 +22,12 @@ function miniSprite(flavour) {
 }
 
 // PreToolUse(Agent) tells us what the agent is for; SubagentStart follows with its id.
-function noteAgentCall(p, input) {
+export function noteAgentCall(p, input) {
   p.pendingAgents = p.pendingAgents || [];
   p.pendingAgents.push((input && (input.description || input.subagent_type)) || 'helper');
 }
 
-function spawnHelper(p, id, type, t) {
+export function spawnHelper(p, id, type, t) {
   if (!p.m || p.x == null) return;
   p.helpers = p.helpers || [];
   if (p.helpers.some((h) => h.id === id)) return;
@@ -43,12 +49,12 @@ function spawnHelper(p, id, type, t) {
   throwSound(p);
 }
 
-function helperWorked(p, id, t) {
+export function helperWorked(p, id, t) {
   const h = p.helpers && p.helpers.find((x) => x.id === id);
   if (h) h.lastWork = t;
 }
 
-function helperDone(p, id, tokens, t) {
+export function helperDone(p, id, tokens, t) {
   const h = p.helpers && p.helpers.find((x) => x.id === id);
   if (!h) {
     if (tokens) addAgentTokens(p, tokens); // its helper never showed (e.g. app opened mid-run)
@@ -59,7 +65,7 @@ function helperDone(p, id, tokens, t) {
 }
 
 // Subagent tokens live in their own transcripts, so they're tracked beside the main count.
-function addAgentTokens(p, n) {
+export function addAgentTokens(p, n) {
   p.agentTokens = (p.agentTokens || 0) + n;
   p.tokens = (p.mainTokens || 0) + p.agentTokens;
   p.bank = (p.bank || 0) + n;
@@ -67,7 +73,7 @@ function addAgentTokens(p, n) {
   Garden.dirty = true;
 }
 
-function updateHelpers(p, dt, t) {
+export function updateHelpers(p, dt, t) {
   if (!p.helpers) return;
   for (const h of p.helpers) {
     if (h.state === 'thrown') {
@@ -108,7 +114,7 @@ function updateHelpers(p, dt, t) {
   p.helpers = p.helpers.filter((h) => h.state !== 'gone');
 }
 
-function drawHelpers(g, p, t) {
+export function drawHelpers(g, p, t) {
   if (!p.helpers) return;
   const spr = miniSprite(p.flavour);
   for (const h of p.helpers) {
@@ -137,7 +143,7 @@ function drawHelpers(g, p, t) {
 }
 
 // Each helper's task, small, under it (screen resolution).
-function drawHelperLabels(ctx, p) {
+export function drawHelperLabels(ctx, p) {
   if (!p.helpers) return;
   const S = Garden.S;
   ctx.font = `${Math.max(9, 3 * S)}px 'Cascadia Mono', Consolas, 'SF Mono', Menlo, monospace`;
@@ -158,12 +164,12 @@ function drawHelperLabels(ctx, p) {
   }
 }
 
-function throwSound(p) {
+export function throwSound(p) {
   if (!Sound.on || document.hidden) return;
   tone(440, 0, { gain: 0.04, dur: 0.18, type: 'triangle', drop: 2.2 }); // whoop up
 }
 
-function mergeSound(p) {
+export function mergeSound(p) {
   if (!Sound.on || document.hidden) return;
   tone(1046.5, 0, { gain: 0.04, dur: 0.2, type: 'triangle', drop: 0.6 });
   tone(1568, 0.08, { gain: 0.035, dur: 0.3 });

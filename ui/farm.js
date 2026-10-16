@@ -7,14 +7,23 @@
 // p.pieces: [{ k: piece, x, y (tiles from the plot's origin), v: variant, txt, b: built 0..1, crop }]
 // The desk corner is tiles 0-2 across and down; the mochi sits in front of the desk.
 
-const DESK_TILES = [];
+import { receiveGift } from './build.js';
+import { Garden, SIGN_FONT, SIGN_INK, TILE, WORLD_COLS, WORLD_ROWS, hash } from './garden.js';
+import { noteRipe } from './harvest.js';
+import { PIECES, drawPiece, pieceTextAnchor } from './pieces.js';
+import { Sound, bloomChime, streakLevel, tone } from './rewards.js';
+import { chime } from './sessions.js';
+import { gridCanvas } from './sprites.js';
+import { SQUARE_H, SQUARE_W } from './town.js';
+
+export const DESK_TILES = [];
 for (let ty = 0; ty < 3; ty++) for (let tx = 0; tx < 3; tx++) DESK_TILES.push([tx, ty]);
 
-const CROP_STAGES = [0, 5, 16, 36, 66]; // seeds needed for mound, sprout, leaves, bud, harvest
-const CROP_KINDS = ['turnip', 'carrot', 'cabbage', 'strawberry', 'pumpkin', 'sunflower', 'wheat'];
-const CROP_WEIGHTS = [18, 18, 16, 14, 10, 10, 14];
+export const CROP_STAGES = [0, 5, 16, 36, 66]; // seeds needed for mound, sprout, leaves, bud, harvest
+export const CROP_KINDS = ['turnip', 'carrot', 'cabbage', 'strawberry', 'pumpkin', 'sunflower', 'wheat'];
+export const CROP_WEIGHTS = [18, 18, 16, 14, 10, 10, 14];
 
-function pickCrop() {
+export function pickCrop() {
   if (Math.random() < 0.012) return 'crystal';
   let r = Math.random() * CROP_WEIGHTS.reduce((a, b) => a + b, 0);
   for (let i = 0; i < CROP_KINDS.length; i++) if ((r -= CROP_WEIGHTS[i]) < 0) return CROP_KINDS[i];
@@ -23,9 +32,9 @@ function pickCrop() {
 
 // Land ----------------------------------------------------------------------------------------
 
-const pieceDef = (k) => PIECES[k] || { cost: 40, layer: 'object', size: [1, 1] };
+export const pieceDef = (k) => PIECES[k] || { cost: 40, layer: 'object', size: [1, 1] };
 
-function pieceTiles(pc) {
+export function pieceTiles(pc) {
   const [w, h] = pieceDef(pc.k).size || [1, 1];
   const out = [];
   for (let dy = 0; dy < h; dy++) for (let dx = 0; dx < w; dx++) out.push([pc.x + dx, pc.y + dy]);
@@ -33,7 +42,7 @@ function pieceTiles(pc) {
 }
 
 // What stands where, by "x,y" (plot tiles): { ground, object, desk }. Rebuilt when the land changes.
-function landIndex(p) {
+export function landIndex(p) {
   if (p._land && p._landRev === p.landRev) return p._land;
   const at = new Map();
   const slot = (x, y) => at.get(x + ',' + y) || (at.set(x + ',' + y, {}), at.get(x + ',' + y));
@@ -47,13 +56,13 @@ function landIndex(p) {
   return at;
 }
 
-function landChanged(p) {
+export function landChanged(p) {
   p.landRev = (p.landRev || 0) + 1;
   Garden.dirty = true;
 }
 
 // Every tile the garden covers, in world tiles.
-function worldTiles(p) {
+export function worldTiles(p) {
   if (p.x == null) return [];
   return [...landIndex(p).keys()].map((k) => {
     const [x, y] = k.split(',').map(Number);
@@ -62,7 +71,7 @@ function worldTiles(p) {
 }
 
 // The garden's extent in world tiles: x0..x1, y0..y1 inclusive.
-function landBounds(p) {
+export function landBounds(p) {
   const tiles = worldTiles(p);
   if (!tiles.length) return null;
   const xs = tiles.map((t) => t[0]), ys = tiles.map((t) => t[1]);
@@ -70,7 +79,7 @@ function landBounds(p) {
 }
 
 // A grid of the world marking every tile within `gap` of another garden (or the town square).
-function occupancy(except, gap) {
+export function occupancy(except, gap) {
   const grid = new Uint8Array(WORLD_COLS * WORLD_ROWS);
   const mark = (x, y) => {
     for (let yy = y - gap; yy <= y + gap; yy++)
@@ -82,7 +91,7 @@ function occupancy(except, gap) {
 }
 
 // Would the garden fit with its origin at (ox, oy), at least `gap` tiles from everything else?
-function landFits(p, ox, oy, grid) {
+export function landFits(p, ox, oy, grid) {
   for (const k of landIndex(p).keys()) {
     const [x, y] = k.split(',').map(Number);
     const wx = ox + x, wy = oy + y;
@@ -96,8 +105,8 @@ function landFits(p, ox, oy, grid) {
 // Each session's wallet: some coins to start with, then one for every COIN_TOKENS tokens it uses.
 // p.spent is what it has spent, in coins (p.coins marks gardens counted that way; older ones
 // counted "materials", 40 coins each).
-const COIN_TOKENS = 100, COIN_START = 250;
-function wallet(p) {
+export const COIN_TOKENS = 100, COIN_START = 250;
+export function wallet(p) {
   if (!p.coins) {
     p.spent = (p.spent || 0) * 40;
     p.coins = 1;
@@ -106,14 +115,14 @@ function wallet(p) {
 }
 
 // Older gardens grew a fixed 6x4 farm: its tilled tiles become soil pieces, crops and all.
-const OLD_FARM = (() => {
+export const OLD_FARM = (() => {
   const tiles = [];
   for (let ty = 0; ty < 4; ty++) for (let tx = 3; tx < 6; tx++) tiles.push([tx, ty]);
   for (let tx = 0; tx < 3; tx++) tiles.push([tx, 3]);
   return tiles.sort((a, b) => Math.hypot(a[0] - 2.6, a[1] - 1.8) - Math.hypot(b[0] - 2.6, b[1] - 1.8));
 })();
 
-function migrateLand(p) {
+export function migrateLand(p) {
   if (p.pieces) return;
   p.pieces = [];
   const wild = {};
@@ -132,7 +141,7 @@ function migrateLand(p) {
 }
 
 // Demo gardens (MOCHI_DEMO): something built, scaled to the plot's tokens.
-function demoLand(p) {
+export function demoLand(p) {
   p.pieces = [];
   p.wild = {};
   const n = Math.min(14, Math.floor((p.tokens || 0) / 80e3));
@@ -148,10 +157,10 @@ function demoLand(p) {
 
 // Building -----------------------------------------------------------------------------------
 
-const buildSeconds = (pc) => Math.min(6, 0.9 + (pieceDef(pc.k).cost / 40) * 0.3); // bigger things take longer
+export const buildSeconds = (pc) => Math.min(6, 0.9 + (pieceDef(pc.k).cost / 40) * 0.3); // bigger things take longer
 
 // The mochi's next job: the oldest piece still waiting to be built. It goes even mid-answer.
-function farmJob(p) {
+export function farmJob(p) {
   if (!p.live || !p.built || p.x == null) return null;
   const pc = (p.pieces || []).find((q) => q.b < 1);
   if (!pc) return giftJob(p);
@@ -161,7 +170,7 @@ function farmJob(p) {
 }
 
 // Carrying a harvested crop over to a neighbour (build.js harvest): walk up beside them.
-function giftJob(p) {
+export function giftJob(p) {
   const e = p.errands?.[0];
   if (!e) return null;
   const to = Garden.plots.find((o) => o.id === e.to && o.m && o.activity !== 'leaving');
@@ -175,7 +184,7 @@ function giftJob(p) {
   return { kind: 'gift', e, to, x: to.m.x + 13, y: to.m.y + 2 };
 }
 
-function workFarmJob(p, job, dt, t) {
+export function workFarmJob(p, job, dt, t) {
   if (job.kind === 'gift') {
     // handed over: hearts all round
     receiveGift(p, job.to, job.e.k);
@@ -209,7 +218,7 @@ function workFarmJob(p, job, dt, t) {
   }
 }
 
-function stepDirt(dt) {
+export function stepDirt(dt) {
   for (const d of Garden.dirt) {
     d.age += dt;
     d.vy += 160 * dt;
@@ -219,14 +228,14 @@ function stepDirt(dt) {
   Garden.dirt = Garden.dirt.filter((d) => d.age < d.life);
 }
 
-function drawDirt(g) {
+export function drawDirt(g) {
   for (const d of Garden.dirt) {
     g.fillStyle = d.c;
     g.fillRect(Math.round(d.x), Math.round(d.y), 1, 1);
   }
 }
 
-function digSound(wood) {
+export function digSound(wood) {
   if (!Sound.on || document.hidden) return;
   tone(wood ? 520 : 160 + Math.random() * 40, 0, { gain: 0.035, dur: 0.07, type: wood ? 'square' : 'triangle', drop: 0.6 });
 }
@@ -234,7 +243,7 @@ function digSound(wood) {
 // Seeds -------------------------------------------------------------------------------------
 
 // Where a seed lands: mostly on soil (that's what it grows), otherwise on or around the garden.
-function landingSpot(p) {
+export function landingSpot(p) {
   const soil = (p.pieces || []).filter((q) => q.k === 'soil' && q.b >= 1);
   let tx, ty;
   if (soil.length && Math.random() < 0.7) ({ x: tx, y: ty } = soil[Math.floor(Math.random() * soil.length)]);
@@ -248,7 +257,7 @@ function landingSpot(p) {
   return { x: (p.x + tx) * TILE + 3 + Math.random() * 9, y: (p.y + ty) * TILE + 3 + Math.random() * 9 };
 }
 
-function absorbSeed(s, t) {
+export function absorbSeed(s, t) {
   const p = s.plot;
   if (!p || p.x == null || !p.pieces) return;
   const tx = Math.floor(s.tx / TILE) - p.x, ty = Math.floor(s.ty / TILE) - p.y;
@@ -281,7 +290,7 @@ function absorbSeed(s, t) {
   Garden.dirty = true;
 }
 
-function cropStage(w) {
+export function cropStage(w) {
   let s = 0;
   for (let i = 0; i < CROP_STAGES.length; i++) if (w >= CROP_STAGES[i]) s = i;
   return s;
@@ -289,7 +298,7 @@ function cropStage(w) {
 
 // Drawing -----------------------------------------------------------------------------------
 
-function pieceOpts(p, pc, t) {
+export function pieceOpts(p, pc, t) {
   const land = landIndex(p), layer = pieceDef(pc.k).layer === 'ground' ? 'ground' : 'object';
   return {
     variant: pc.v,
@@ -302,7 +311,7 @@ function pieceOpts(p, pc, t) {
 }
 
 // Ground layer: wildflowers, ground pieces (soil, paths, water, beds) and the crops on the soil.
-function drawFarmBack(g, p, t) {
+export function drawFarmBack(g, p, t) {
   if (!p.pieces) return;
   const land = landIndex(p);
   for (const [k, n] of Object.entries(p.wild || {})) {
@@ -328,7 +337,7 @@ function drawFarmBack(g, p, t) {
 }
 
 // Standing pieces, for the depth sort with mochis and desks: each by the bottom of its tiles.
-function landItems(g, p, t) {
+export function landItems(g, p, t) {
   const out = [];
   for (const pc of p.pieces || []) {
     if (pieceDef(pc.k).layer === 'ground') continue;
@@ -339,7 +348,7 @@ function landItems(g, p, t) {
 }
 
 // Sign texts, drawn at screen resolution so they stay sharp (garden.js, world-anchored).
-function drawLandTexts(ctx, p) {
+export function drawLandTexts(ctx, p) {
   const S = Garden.S;
   for (const pc of p.pieces || []) {
     if (!pc.txt || !PIECES[pc.k]?.text || pc.b < 1) continue;
@@ -362,7 +371,7 @@ function drawLandTexts(ctx, p) {
   }
 }
 
-function wildPatch(g, ox, oy, n, wx, wy) {
+export function wildPatch(g, ox, oy, n, wx, wy) {
   const colours = ['#f29ac2', '#ffffff', '#b48ad6', '#f2c14e', '#7fa7e8'];
   const count = Math.min(5, 1 + Math.floor((n - 6) / 4));
   for (let i = 0; i < count; i++) {
@@ -379,7 +388,7 @@ function wildPatch(g, ox, oy, n, wx, wy) {
 
 // Crops ---------------------------------------------------------------------------------------
 
-const CROP_PAL = {
+export const CROP_PAL = {
   G: '#7fb04f', g: '#5f8f3e', d: '#466e2c', s: '#5f8f3e',
   w: '#f4efe4', v: '#9a5bb5', V: '#6f3f8a',
   r: '#e0665c', R: '#a83e3a', n: '#f08a3c', N: '#c0622a',
@@ -387,7 +396,7 @@ const CROP_PAL = {
   c: '#bdf0fa', C: '#5fb8d8', o: '#3a2218',
 };
 
-const CROP_ART = {
+export const CROP_ART = {
   mound: ['.KK.', 'kkkk'],
   sprout: ['G.G', '.g.', '.g.'],
   leaves: ['G...G', 'GG.GG', '.ggg.', '..g..'],
@@ -402,10 +411,10 @@ const CROP_ART = {
   gold: ['....s....', '...bs....', '.yYyyyYy.', 'yYyywyyYy', 'yYyyYyyYy', 'yYyyYyyYy', '.YYYYYYY.'],
   crystal: ['...c...', '..cCc..', '.cCwCc.', '..cCc..', '...c...', '...s...', '.G.s.G.', '.GGsGG.', '...s...'],
 };
-const BUD_COLOUR = { turnip: '#9a5bb5', carrot: '#f08a3c', cabbage: '#a3d977', strawberry: '#ffffff', pumpkin: '#f2c14e', sunflower: '#f2c14e', wheat: '#c9962e', gold: '#f2c14e', crystal: '#bdf0fa' };
+export const BUD_COLOUR = { turnip: '#9a5bb5', carrot: '#f08a3c', cabbage: '#a3d977', strawberry: '#ffffff', pumpkin: '#f2c14e', sunflower: '#f2c14e', wheat: '#c9962e', gold: '#f2c14e', crystal: '#bdf0fa' };
 
-const cropCache = new Map();
-function cropSprite(name, budColour) {
+export const cropCache = new Map();
+export function cropSprite(name, budColour) {
   const key = name + (budColour || '');
   if (!cropCache.has(key)) cropCache.set(key, gridCanvas(CROP_ART[name], (ch) => (ch === 'x' ? budColour : CROP_PAL[ch])));
   return cropCache.get(key);
@@ -413,10 +422,10 @@ function cropSprite(name, budColour) {
 
 // The approved crop art (the "cute & round" concept), extracted to true pixels by
 // tools/extract_crops.py: 5 growth stages across, one crop kind per row, 16x24 cells.
-const CROP_SHEET = new Image();
+export const CROP_SHEET = new Image();
 CROP_SHEET.src = 'art/crops.png';
-const sheetCache = new Map();
-function sheetSprite(kind, stage) {
+export const sheetCache = new Map();
+export function sheetSprite(kind, stage) {
   const row = CROP_KINDS.indexOf(kind);
   if (row < 0 || !CROP_SHEET.complete || !CROP_SHEET.naturalWidth) return null;
   const key = kind + stage;
@@ -432,7 +441,7 @@ function sheetSprite(kind, stage) {
 }
 
 // A golden pumpkin: the pumpkin, washed gold.
-function goldSprite() {
+export function goldSprite() {
   if (sheetCache.has('gold')) return sheetCache.get('gold');
   const base = sheetSprite('pumpkin', 4);
   if (!base) return null;
@@ -447,7 +456,7 @@ function goldSprite() {
   return c;
 }
 
-function drawCrop(g, ox, oy, c, t) {
+export function drawCrop(g, ox, oy, c, t) {
   const st = cropStage(c.w);
   const art = c.k === 'gold' ? (st === 4 ? goldSprite() : sheetSprite('pumpkin', st)) : sheetSprite(c.k, st);
   if (art) {

@@ -7,14 +7,19 @@
 //   both:    Ctrl+Tab / Ctrl+Shift+Tab cycle · Shift+Enter new line
 // (On Windows plain Ctrl+T and Ctrl+W stay with Claude Code: task list and delete-word.)
 
-const IS_MAC = /Mac/.test(navigator.platform);
+import { saveNow } from './persist.js';
+import { closeTab, newSession, select } from './sessions.js';
+import { tabs, ui } from './state.js';
+import { invoke } from './tauri.js';
+
+export const IS_MAC = /Mac/.test(navigator.platform);
 // The app's modifier: Cmd on a Mac (Ctrl belongs to the terminal there), Ctrl on Windows.
-const mod = (e) => (IS_MAC ? e.metaKey : e.ctrlKey);
+export const mod = (e) => (IS_MAC ? e.metaKey : e.ctrlKey);
 // Claude Code reads the clipboard image itself when it gets its image-paste key: Alt+V on
 // Windows (Ctrl+V is the terminal's text paste there), Ctrl+V on a Mac.
-const IMAGE_PASTE_KEY = IS_MAC ? '\x16' : '\x1bv';
+export const IMAGE_PASTE_KEY = IS_MAC ? '\x16' : '\x1bv';
 
-function makeTerminal(el) {
+export function makeTerminal(el) {
   const term = new Terminal({
     fontFamily: "'Cascadia Mono', Consolas, 'SF Mono', Menlo, monospace",
     fontSize: 13,
@@ -81,7 +86,7 @@ function makeTerminal(el) {
   return { term, fit };
 }
 
-async function clipboardHasImage() {
+export async function clipboardHasImage() {
   try {
     const items = await navigator.clipboard.read();
     return items.some((i) => i.types.some((t) => t.startsWith('image/')));
@@ -90,16 +95,16 @@ async function clipboardHasImage() {
   }
 }
 
-function openLink(e, uri) {
+export function openLink(e, uri) {
   if (!mod(e)) return; // Ctrl/Cmd+click, as in Windows Terminal, so selecting text never opens links
   invoke('open_url', { url: uri }).catch(() => {});
 }
 
-function copyText(text) {
+export function copyText(text) {
   navigator.clipboard.writeText(text).catch(() => {});
 }
 
-function isAppShortcut(e) {
+export function isAppShortcut(e) {
   if (e.altKey) return false;
   const k = e.key.toLowerCase();
   if (e.ctrlKey && k === 'tab') return true;
@@ -109,22 +114,22 @@ function isAppShortcut(e) {
 }
 
 // Runs in the capture phase, before the terminal sees the key.
-function onAppShortcut(e) {
+export function onAppShortcut(e) {
   if (!isAppShortcut(e)) return;
   e.preventDefault();
   e.stopPropagation();
   const k = e.key.toLowerCase();
   const ids = [...tabs.keys()];
   if (k === 't') newSession();
-  else if (k === 'w') activeTab && closeTab(activeTab);
+  else if (k === 'w') ui.activeTab && closeTab(ui.activeTab);
   else if (k === 'tab' && ids.length) {
-    const i = ids.indexOf(activeTab);
+    const i = ids.indexOf(ui.activeTab);
     select(ids[(i + (e.shiftKey ? -1 : 1) + ids.length) % ids.length]);
   } else if (ids[Number(e.key) - 1]) select(ids[Number(e.key) - 1]);
 }
 
 // A small dialog in the app's own plain style; resolves with the chosen button's key.
-function showModal({ title, lines, buttons }) {
+export function showModal({ title, lines, buttons }) {
   return new Promise((resolve) => {
     const back = document.createElement('div');
     back.className = 'modal-back';
@@ -175,7 +180,7 @@ function showModal({ title, lines, buttons }) {
 
 // Closing the window: with sessions open, keep them running in the tray or quit (they come back
 // on the next launch either way).
-async function onCloseRequested() {
+export async function onCloseRequested() {
   const live = [...tabs.values()].filter((t) => t.plot.live);
   if (!live.length) {
     await saveNow();

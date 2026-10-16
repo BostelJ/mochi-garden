@@ -3,28 +3,32 @@
 // and nothing typed for a little while (so a half-written prompt is never lost). Open sessions
 // come back after the restart. [ install now ] skips the wait.
 
-const UPDATE_QUIET_MS = 5000; // nothing busy for this long...
-const UPDATE_TYPING_MS = 20000; // ...and no keys pressed for this long
-let updateWaiting = false;
-let updateQuietSince = null;
-let lastKeyAt = 0;
+import { saveNow } from './persist.js';
+import { tabs } from './state.js';
+import { currentWindow, invoke } from './tauri.js';
+
+export const UPDATE_QUIET_MS = 5000; // nothing busy for this long...
+export const UPDATE_TYPING_MS = 20000; // ...and no keys pressed for this long
+export let updateWaiting = false;
+export let updateQuietSince = null;
+export let lastKeyAt = 0;
 
 window.addEventListener('keydown', () => (lastKeyAt = Date.now()), true);
 setInterval(tryUpdate, 1000);
 
 // A local build from `npm run ship` (no payload) or a newer release ({ version }).
-function onUpdateReady(ev) {
+export function onUpdateReady(ev) {
   updateWaiting = true;
   updateQuietSince = null;
   const v = ev?.payload?.version;
   updateBar(`${v ? `v${v} ` : 'update '}ready · installs when your mochis are idle`, true);
 }
 
-function onUpdateFailed(ev) {
+export function onUpdateFailed(ev) {
   updateBar(`update failed: ${ev?.payload || 'unknown error'} · it'll try again later`, false);
 }
 
-function updateBar(text, withButton) {
+export function updateBar(text, withButton) {
   let bar = document.getElementById('update');
   if (!bar) {
     bar = document.createElement('div');
@@ -43,11 +47,11 @@ function updateBar(text, withButton) {
   }
 }
 
-function mochisBusy() {
+export function mochisBusy() {
   return [...tabs.values()].some((t) => t.plot.live && (t.plot.activity === 'working' || t.plot.bubble === '?'));
 }
 
-function tryUpdate() {
+export function tryUpdate() {
   if (!updateWaiting) return;
   if (mochisBusy() || Date.now() - lastKeyAt < UPDATE_TYPING_MS) {
     updateQuietSince = null;
@@ -57,13 +61,13 @@ function tryUpdate() {
   if (Date.now() - updateQuietSince >= UPDATE_QUIET_MS) installUpdate();
 }
 
-async function installUpdate() {
+export async function installUpdate() {
   updateWaiting = false;
   updateBar('updating…', false);
   await saveNow();
   let hidden = false;
   try {
-    hidden = !(await window.__TAURI__.window.getCurrentWindow().isVisible());
+    hidden = !(await currentWindow().isVisible());
   } catch {}
   try {
     await invoke('apply_update', { hidden });

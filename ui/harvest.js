@@ -2,8 +2,14 @@
 // sessions tended, crops ripened, which mochi worked hardest). When the week turns over, every
 // mochi hops, spring petals fly, and a little summary card shows how the week went.
 
+import { Garden, fmtTokens } from './garden.js';
+import { Sound, tone } from './rewards.js';
+import { mochiSprite } from './sprites.js';
+import { showModal } from './terminal.js';
+import { Usage } from './usage.js';
+
 // Which week this is: the weekly limit's reset time when known, otherwise the calendar week.
-function weekKey() {
+export function weekKey() {
   const w = Usage.week;
   if (w?.resetsAt && Date.now() / 1000 < w.resetsAt) return 'r' + Math.round(w.resetsAt / 3600); // to the hour
   const d = new Date();
@@ -12,12 +18,12 @@ function weekKey() {
   return 'c' + d.toISOString().slice(0, 10);
 }
 
-function weekStats() {
+export function weekStats() {
   if (!Garden.week) Garden.week = { key: weekKey(), tokens: 0, ripe: 0, per: {}, sessions: [] };
   return Garden.week;
 }
 
-function noteWeekTokens(p, n) {
+export function noteWeekTokens(p, n) {
   if (!n || Usage.demo) return;
   const w = weekStats();
   w.tokens += n;
@@ -26,14 +32,14 @@ function noteWeekTokens(p, n) {
   Garden.dirty = true;
 }
 
-function noteRipe() {
+export function noteRipe() {
   if (Usage.demo) return;
   weekStats().ripe++;
   Garden.dirty = true;
 }
 
 // Checked every so often: has the week turned over since the tally started?
-function checkHarvest() {
+export function checkHarvest() {
   const w = weekStats();
   const key = weekKey();
   if (w.key === key) return;
@@ -47,7 +53,7 @@ function checkHarvest() {
   if (w.tokens > 0) showHarvest(w);
 }
 
-function showHarvest(w) {
+export function showHarvest(w) {
   const t = performance.now() / 1000;
   Garden.partyAt = t; // every mochi hops (garden.js)
   Usage.springAt = t; // and spring petals fly (sky.js)
@@ -72,7 +78,7 @@ function showHarvest(w) {
   showModal({ title: 'the week\'s harvest', lines, buttons: [['ok', 'lovely']] });
 }
 
-function harvestChime() {
+export function harvestChime() {
   if (!Sound.on) return;
   [523.25, 659.25, 783.99, 1046.5, 1318.5, 1568].forEach((f, i) => tone(f, i * 0.09, { gain: 0.045, dur: 0.4, type: 'triangle' }));
 }

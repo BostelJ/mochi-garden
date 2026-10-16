@@ -2,9 +2,11 @@
 // launches. The garden shows it as sky (sky.js): the 5-hour window is the time of day, the week is
 // the season. The side panel shows the exact numbers as two smooth bars.
 
-const Usage = load();
+import { fiveColour, seasonColour } from './sky.js';
 
-function load() {
+export const Usage = loadUsage();
+
+export function loadUsage() {
   try {
     return JSON.parse(localStorage.getItem('mg.usage')) || {};
   } catch {
@@ -13,7 +15,7 @@ function load() {
 }
 
 // rate_limits: { five_hour: { used_percentage, resets_at }, seven_day: {...} }
-function onUsage(limits, t) {
+export function onUsage(limits, t) {
   for (const [key, name] of [['five_hour', 'five'], ['seven_day', 'week']]) {
     const w = limits[key];
     if (!w || w.used_percentage == null) continue;
@@ -31,28 +33,28 @@ function onUsage(limits, t) {
 }
 
 // The window as of now: once its reset time passes it's full again (until the next report).
-function current(name) {
+export function current(name) {
   const w = Usage[name];
   if (!w) return null;
   if (w.resetsAt && Date.now() / 1000 > w.resetsAt) return { used: 0, resetsAt: null, lapsed: true };
   return w;
 }
 
-function left(name) {
+export function left(name) {
   const w = current(name);
   return w ? Math.max(0, Math.min(1, 1 - w.used / 100)) : 1;
 }
 
 // A new 5-hour window is a sunrise; a new week is spring.
-function refill(name, t) {
+export function refill(name, t) {
   if (name === 'five') Usage.sunriseAt = t;
   else Usage.springAt = t;
   renderUsageBar();
 }
 
 // Noticing resets while the app sits open, even with no session reporting.
-const lapsedSeen = {};
-function checkResets(t) {
+export const lapsedSeen = {};
+export function checkResets(t) {
   for (const name of ['five', 'week']) {
     const lapsed = !!current(name)?.lapsed;
     if (lapsed && !lapsedSeen[name]) refill(name, t);
@@ -61,7 +63,7 @@ function checkResets(t) {
 }
 
 // The side panel's line: two smooth bars of what's left, coloured like the sky they stand for.
-function renderUsageBar() {
+export function renderUsageBar() {
   const el = document.getElementById('usage');
   if (!el) return;
   const when = (w, long) => {

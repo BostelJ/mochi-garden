@@ -16,15 +16,15 @@
 <body>
 <canvas id="c"></canvas>
 <div id="label"></div>
-<script src="sprites.js"></script>
-<script src="wardrobe.js"></script>
-<script>
+<script type="module">
+import { BUBBLE_ASK, BUBBLE_BANG, FLAVOURS, mochiSprite, prop } from './sprites.js';
+import { WEAR, WEAR_ORDER, drawWear } from './wardrobe.js';
+import { emitTo, invoke, listen } from './tauri.js';
+
 // While you're in another app, every open session's mochi peeks up over the taskbar, half
 // hidden behind it: working ones jiggle and shake token seeds out, ones that need you bounce with
 // a "?", finished ones show a "!", idle ones just sit. Click one to open its session.
 // The main window sends the mochis (app.js sendOverlaySettings); token events say how many seeds.
-const { listen } = window.__TAURI__.event;
-const { invoke } = window.__TAURI__.core;
 const S = 3; // pixel scale
 const PITCH = 16; // art px per mochi slot
 const SHOW = 7; // rows of a mochi showing above the taskbar (down to its blush)
@@ -112,7 +112,7 @@ listen('tokens', ({ payload: e }) => {
   wake();
 });
 // it may load after the garden last sent its mochis: ask again
-window.__TAURI__.event.emitTo('main', 'overlay-ready').catch(() => {});
+emitTo('main', 'overlay-ready').catch(() => {});
 
 function add(tab, n) {
   if (!mainFocused && enabled && n > 0) bank.set(tab, (bank.get(tab) || 0) + n);

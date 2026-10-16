@@ -3,14 +3,19 @@
 // lifetime tokens: a notice board, then a well, a mochi statue, string lights, a blossom tree
 // and finally a market stall. Idle mochis go there to hang out.
 
-const SQUARE_W = 8, SQUARE_H = 5;
-const TOWN = { well: 1e6, statue: 3e6, lights: 7e6, tree: 15e6, stall: 30e6 };
+import { occupancy } from './farm.js';
+import { Garden, TILE, WORLD_COLS, WORLD_ROWS, fmtTokens, hash } from './garden.js';
+import { drawPiece } from './pieces.js';
+import { gridCanvas, shadeHex } from './sprites.js';
 
-function gardenTotal() {
+export const SQUARE_W = 8, SQUARE_H = 5;
+export const TOWN = { well: 1e6, statue: 3e6, lights: 7e6, tree: 15e6, stall: 30e6 };
+
+export function gardenTotal() {
   return (Garden.allPlots || Garden.plots).reduce((s, p) => s + (p.tokens || 0), 0);
 }
 
-function ensureSquare() {
+export function ensureSquare() {
   if (Garden.square) return;
   const placed = Garden.plots.filter((p) => p.x != null);
   if (placed.length < 2 && gardenTotal() < 300e3) return;
@@ -38,7 +43,7 @@ function ensureSquare() {
 
 // Ground: cobbles, the same as the buildable cobble piece, with the square's corners rounded off.
 // Once the blossom tree has grown, a few of its petals lie about.
-function drawSquareGround(g) {
+export function drawSquareGround(g) {
   const sq = Garden.square;
   if (!sq) return;
   const inside = (tx, ty) => tx >= 0 && ty >= 0 && tx < SQUARE_W && ty < SQUARE_H && !((tx === 0 || tx === SQUARE_W - 1) && (ty === 0 || ty === SQUARE_H - 1));
@@ -53,7 +58,7 @@ function drawSquareGround(g) {
 
 // Things standing in the square (depth-sorted with the mochis by app code via items).
 // Each is drawn from its left edge and the row its base stands on.
-function townItems(t) {
+export function townItems(t) {
   const sq = Garden.square;
   if (!sq) return [];
   const T = gardenTotal();
@@ -68,7 +73,7 @@ function townItems(t) {
 }
 
 // String lights between two poles at the back of the square, drawn over everything.
-function drawTownLights(g, t) {
+export function drawTownLights(g, t) {
   const sq = Garden.square;
   if (!sq || gardenTotal() < TOWN.lights) return;
   const { x0, x1, yAt } = townLightString(sq);
@@ -86,13 +91,13 @@ function drawTownLights(g, t) {
 }
 
 // The string the lights hang on: from one pole top to the other, sagging in the middle.
-function townLightString(sq) {
+export function townLightString(sq) {
   const x0 = sq.x * TILE + 4, x1 = sq.x * TILE + 124, y0 = sq.y * TILE - 11, sag = 8;
   return { x0, x1, yAt: (x) => y0 + Math.round(sag * (1 - ((x - (x0 + x1) / 2) / ((x1 - x0) / 2)) ** 2)) };
 }
 
 // World px centre and colour of each bulb (for a night glow, like the lanterns get in sky.js).
-function townLightSpots() {
+export function townLightSpots() {
   const sq = Garden.square;
   if (!sq || gardenTotal() < TOWN.lights) return [];
   const { x0, x1, yAt } = townLightString(sq);
@@ -106,7 +111,7 @@ function townLightSpots() {
 }
 
 // Hand-pixelled sprites for the square, in the style of the buildable pieces (built lazily).
-const TownArt = (() => {
+export const TownArt = (() => {
   const INK = '#3a2218';
   const PAL = {
     o: INK,
@@ -477,28 +482,28 @@ const TownArt = (() => {
   };
 })();
 
-function noticeBoard(g, x, base) {
+export function noticeBoard(g, x, base) {
   TownArt.board(g, x, base);
 }
 
-function well(g, x, base, t) {
+export function well(g, x, base, t) {
   TownArt.well(g, x, base, t);
 }
 
-function statue(g, x, base) {
+export function statue(g, x, base) {
   TownArt.statue(g, x, base);
 }
 
-function blossomTree(g, x, base, t) {
+export function blossomTree(g, x, base, t) {
   TownArt.tree(g, x, base, t);
 }
 
-function stall(g, x, base) {
+export function stall(g, x, base) {
   TownArt.stall(g, x, base);
 }
 
 // The board's label, at screen resolution like the plot signs.
-function drawTownSign(ctx) {
+export function drawTownSign(ctx) {
   const sq = Garden.square;
   if (!sq) return;
   const S = Garden.S;

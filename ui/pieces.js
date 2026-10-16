@@ -3,7 +3,10 @@
 // the bottom row of their tiles and may reach upward (drawn y-sorted with the mochis).
 // Needs sprites.js (gridCanvas, FLAVOURS, shadeHex, artImage, ready) and garden.js (TILE, hash).
 
-const PIECES = {
+import { hash } from './garden.js';
+import { FLAVOURS, FLAVOUR_ORDER, artImage, gridCanvas, ready, shadeHex } from './sprites.js';
+
+export const PIECES = {
   // ground
   soil: { cost: 80, layer: 'ground', connects: true, desc: 'tilled soil bed; token seeds grow crops in it' },
   path: { cost: 40, layer: 'ground', connects: true, desc: 'gravel path with stepping stones' },
@@ -32,7 +35,7 @@ const PIECES = {
   windchime: { cost: 120, layer: 'object', above: 7, desc: 'a wind chime hanging from a little post' },
 };
 
-const PieceArt = (() => {
+export const PieceArt = (() => {
   const T = 16;
   const INK = '#3a2218';
   const BASE = {
@@ -1034,16 +1037,16 @@ const PieceArt = (() => {
 })();
 
 // Draw one placed piece whose top-left tile is at world px (ox, oy). o: { variant, text, t, same(dx, dy), seed, build }.
-function drawPiece(g, name, ox, oy, o) {
+export function drawPiece(g, name, ox, oy, o) {
   PieceArt.draw(g, name, ox, oy, o);
 }
 
 // World px centre of a sign's board, where the caller draws its text.
-function pieceTextAnchor(name, ox, oy) {
+export function pieceTextAnchor(name, ox, oy) {
   return PieceArt.anchor(name, ox, oy);
 }
 
 // A finished piece on a small transparent canvas (for menus); lantern needs its art loaded.
-function pieceIcon(name, variant) {
+export function pieceIcon(name, variant) {
   return PieceArt.icon(name, variant);
 }

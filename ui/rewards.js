@@ -1,9 +1,13 @@
 // Rewards for keeping mochis busy: streaks (reply soon after a mochi finishes and its streak
 // grows; let it sit and the streak lapses) and the little sounds of the garden.
 
-const STREAK_GAP_MS = 8 * 60 * 1000;
+import { landBounds } from './farm.js';
+import { Garden, PLOT_W, TILE } from './garden.js';
+import { FLAVOUR_ORDER } from './sprites.js';
 
-function activeStreak(p) {
+export const STREAK_GAP_MS = 8 * 60 * 1000;
+
+export function activeStreak(p) {
   if (!p.streak) return 0;
   if (p.live && p.activity === 'working') return p.streak;
   if (p.lastStop && Date.now() - p.lastStop < STREAK_GAP_MS) return p.streak;
@@ -11,13 +15,13 @@ function activeStreak(p) {
 }
 
 // 0 none, 1 warm (x3: golden seeds), 2 hot (x5: sparkle trails, glowing plot), 3 blazing (x8: every colour).
-function streakLevel(p) {
+export function streakLevel(p) {
   const s = activeStreak(p);
   return s >= 8 ? 3 : s >= 5 ? 2 : s >= 3 ? 1 : 0;
 }
 
 // Called when a prompt is sent; returns true when the streak just reached a new level.
-function bumpStreak(p) {
+export function bumpStreak(p) {
   const before = streakLevel(p);
   const now = Date.now();
   p.streak = p.lastStop && now - p.lastStop < STREAK_GAP_MS ? (p.streak || 0) + 1 : 1;
@@ -29,7 +33,7 @@ function bumpStreak(p) {
   return up;
 }
 
-function drawStreakGlow(ctx, p, t) {
+export function drawStreakGlow(ctx, p, t) {
   const level = streakLevel(p);
   if (level < 2 || p.x == null) return;
   const S = Garden.S;
@@ -48,7 +52,7 @@ function drawStreakGlow(ctx, p, t) {
 }
 
 // A tiny pixel flame for the sign, `s` = screen px per art pixel.
-function drawFlame(ctx, x, y, s) {
+export function drawFlame(ctx, x, y, s) {
   const rows = ['.o.', 'oyo', 'oro', '.o.'];
   const col = { o: '#e0665c', y: '#ffd45c', r: '#ff9a3c' };
   rows.forEach((row, j) => [...row].forEach((ch, i) => {
@@ -60,9 +64,9 @@ function drawFlame(ctx, x, y, s) {
 
 // Sound ---------------------------------------------------------------------------------
 
-const Sound = { on: pref('mg.sound', true), ctx: null, lastPop: 0, lastBloom: 0 };
+export const Sound = { on: pref('mg.sound', true), ctx: null, lastPop: 0, lastBloom: 0 };
 
-function pref(key, dflt) {
+export function pref(key, dflt) {
   try {
     const v = localStorage.getItem(key);
     return v == null ? dflt : v === 'on';
@@ -71,13 +75,13 @@ function pref(key, dflt) {
   }
 }
 
-function setPref(key, on) {
+export function setPref(key, on) {
   try {
     localStorage.setItem(key, on ? 'on' : 'off');
   } catch {}
 }
 
-function audio() {
+export function audio() {
   try {
     Sound.ctx = Sound.ctx || new AudioContext();
     if (Sound.ctx.state === 'suspended') Sound.ctx.resume();
@@ -87,7 +91,7 @@ function audio() {
   }
 }
 
-function tone(freq, at, { gain = 0.05, dur = 0.35, type = 'sine', drop = 1 } = {}) {
+export function tone(freq, at, { gain = 0.05, dur = 0.35, type = 'sine', drop = 1 } = {}) {
   const a = audio();
   if (!a) return;
   const o = a.createOscillator(), gn = a.createGain();
@@ -104,10 +108,10 @@ function tone(freq, at, { gain = 0.05, dur = 0.35, type = 'sine', drop = 1 } = {
 }
 
 // Pentatonic, so any run of pops sounds pleasant; each flavour is transposed into its own key.
-const POP_SCALE = [523.25, 587.33, 659.25, 783.99, 880, 1046.5];
-const FLAVOUR_KEY = [1, 1.122, 0.891, 1.26, 0.794, 1.059, 0.944, 1.189];
+export const POP_SCALE = [523.25, 587.33, 659.25, 783.99, 880, 1046.5];
+export const FLAVOUR_KEY = [1, 1.122, 0.891, 1.26, 0.794, 1.059, 0.944, 1.189];
 
-function seedPop(p) {
+export function seedPop(p) {
   if (!Sound.on || document.hidden) return;
   const now = performance.now();
   if (now - Sound.lastPop < 38) return; // a fountain becomes a patter, not a buzz
@@ -118,7 +122,7 @@ function seedPop(p) {
   tone(f, 0, { gain: 0.03 / (1 + (p.effort || 0) / 12), dur: 0.09, type: 'triangle', drop: 0.82 });
 }
 
-function bloomChime() {
+export function bloomChime() {
   if (!Sound.on || document.hidden) return;
   const now = performance.now();
   if (now - Sound.lastBloom < 300) return;
@@ -127,7 +131,7 @@ function bloomChime() {
   tone(2093, 0.06, { gain: 0.02, dur: 0.3 });
 }
 
-function streakChime(level) {
+export function streakChime(level) {
   if (!Sound.on) return;
   const notes = [523.25, 659.25, 783.99, 1046.5, 1318.5].slice(0, 2 + level);
   notes.forEach((f, i) => tone(f, i * 0.07, { gain: 0.045, dur: 0.3, type: 'triangle' }));

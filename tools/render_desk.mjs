@@ -3,6 +3,7 @@
 // A tiny canvas stand-in records fillRect calls into a pixel buffer.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { deflateSync } from 'node:zlib';
+import { asScript } from './ui-script.mjs';
 
 const W = 60, H = 48, OX = 8, OY = 14;
 const buf = new Uint8Array(W * H * 4);
@@ -19,7 +20,7 @@ const g = {
   },
   save() {}, restore() {}, beginPath() {}, rect() {}, clip() {}, drawImage() {},
 };
-const src = readFileSync(new URL('../ui/desk.js', import.meta.url), 'utf8');
+const src = asScript(readFileSync(new URL('../ui/desk.js', import.meta.url), 'utf8'));
 const api = new Function('TILE', 'atHome', 'prop', 'PLANK', 'Sound', 'tone', 'document', src + '; return { drawDeskBody, drawTypewriter };');
 const { drawDeskBody, drawTypewriter } = api(16, () => true, () => null, null, { on: false }, () => {}, { hidden: true });
 // grass behind, so the outline reads like in the game

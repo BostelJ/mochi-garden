@@ -4,10 +4,11 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import vm from 'node:vm';
 import { createCanvas } from '@napi-rs/canvas';
+import { asScript } from './ui-script.mjs';
 
 const ui = (f) => new URL('../ui/' + f, import.meta.url);
 globalThis.document = { createElement: () => createCanvas(1, 1), hidden: true };
-const run = (file) => vm.runInThisContext(readFileSync(ui(file), 'utf8'), { filename: file });
+const run = (file) => vm.runInThisContext(asScript(readFileSync(ui(file), 'utf8')), { filename: file });
 run('sprites.js');
 run('wardrobe.js');
 const { WEAR, WEAR_ORDER, WEAR_COLOURS, drawWear, mochiSprite } = vm.runInThisContext('({ WEAR, WEAR_ORDER, WEAR_COLOURS, drawWear, mochiSprite })');

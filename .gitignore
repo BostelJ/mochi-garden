@@ -5,4 +5,3 @@ src-tauri/target-ship/
 src-tauri/target-*/
 *.log
 .devdata/
-tools/signs/harness.gen.html
