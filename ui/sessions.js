@@ -26,11 +26,13 @@ export function makePlot(cwd) {
   return plot;
 }
 
+/** @param {Plot} p */
 export function dropPlot(p) {
   for (const list of [plots, Garden.plots]) if (list.includes(p)) list.splice(list.indexOf(p), 1);
 }
 
 // The session ended: its mochi packs up and walks off (garden.js), and its plot is put away.
+/** @param {Plot} p */
 export function sendAway(p) {
   p.live = false;
   p.bubble = null;
@@ -43,6 +45,7 @@ export function sendAway(p) {
 }
 
 // A packed-away session resumed: its mochi walks back in to its old spot (or a free one nearby).
+/** @param {Plot} p */
 export function bringBack(p) {
   if (!p.away) return;
   p.away = false;
@@ -184,6 +187,7 @@ export function markSeen() {
 
 // Clicking a mochi opens its terminal and, unless the click came from the card itself, the card
 // for acting right there in the garden.
+/** @param {Plot} plot */
 export function pickPlot(plot, fromCard) {
   const t = tabOfPlot(plot);
   if (t) select(t.tab);
@@ -225,6 +229,7 @@ export function chime(kind) {
 
 // Session list ---------------------------------------------------------------------------------
 
+/** @param {Plot} p */
 export function statusOf(p) {
   if (!p.live) return ['ended', ''];
   if (p.bubble === '?') return ['needs you', 'asking'];

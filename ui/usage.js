@@ -69,6 +69,7 @@ export function renderUsageBar() {
   const when = (w, long) => {
     if (!w?.resetsAt) return '';
     const d = new Date(w.resetsAt * 1000);
+    /** @type {Intl.DateTimeFormatOptions} */
     const opts = long ? { hour: 'numeric' } : { hour: 'numeric', minute: '2-digit' }; // the week only needs the day and hour
     const time = d.toLocaleTimeString([], opts).toLowerCase().replace(' ', '');
     return long ? `${d.toLocaleDateString([], { weekday: 'short' })} ${time}` : time;

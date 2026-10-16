@@ -18,6 +18,7 @@ export const MOCHI = [
   '....ooooo....',
 ];
 // Eyes: dark 2x2 with a white catchlight top-right.
+/** @type {[number, number, string][]} */
 export const EYE_PIXELS = [[3, 4, 'e'], [4, 4, 'w'], [3, 5, 'e'], [4, 5, 'e'], [8, 4, 'e'], [9, 4, 'w'], [8, 5, 'e'], [9, 5, 'e']];
 
 // Asleep: flattened, eyes closed as short lines.

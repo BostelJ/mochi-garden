@@ -387,7 +387,9 @@ export const PieceArt = (() => {
 
   // Pine: stacked tiers (listed bottom first; each upper tier's skirt hangs over the one below).
   const PINE = (() => {
-    const w = 14, h = 22, tiers = [[13, 21, 7], [8, 15, 5.6], [4, 10, 4.2], [0, 5, 2.6]];
+    /** @type {[number, number, number][]} */
+    const tiers = [[13, 21, 7], [8, 15, 5.6], [4, 10, 4.2], [0, 5, 2.6]];
+    const w = 14, h = 22;
     const half = (y, [t, b, hw]) => 0.6 + (hw - 0.6) * (y - t) / (b - t);
     const own = (x, y) => {
       let k = -1;

@@ -34,6 +34,7 @@ export function pickCrop() {
 
 export const pieceDef = (k) => PIECES[k] || { cost: 40, layer: 'object', size: [1, 1] };
 
+/** @param {{ k: string, x: number, y: number }} pc  a piece, or one about to be */
 export function pieceTiles(pc) {
   const [w, h] = pieceDef(pc.k).size || [1, 1];
   const out = [];
@@ -42,6 +43,7 @@ export function pieceTiles(pc) {
 }
 
 // What stands where, by "x,y" (plot tiles): { ground, object, desk }. Rebuilt when the land changes.
+/** @param {Plot} p */
 export function landIndex(p) {
   if (p._land && p._landRev === p.landRev) return p._land;
   const at = new Map();
@@ -56,12 +58,14 @@ export function landIndex(p) {
   return at;
 }
 
+/** @param {Plot} p */
 export function landChanged(p) {
   p.landRev = (p.landRev || 0) + 1;
   Garden.dirty = true;
 }
 
 // Every tile the garden covers, in world tiles.
+/** @param {Plot} p */
 export function worldTiles(p) {
   if (p.x == null) return [];
   return [...landIndex(p).keys()].map((k) => {
@@ -71,6 +75,7 @@ export function worldTiles(p) {
 }
 
 // The garden's extent in world tiles: x0..x1, y0..y1 inclusive.
+/** @param {Plot} p */
 export function landBounds(p) {
   const tiles = worldTiles(p);
   if (!tiles.length) return null;
@@ -91,6 +96,7 @@ export function occupancy(except, gap) {
 }
 
 // Would the garden fit with its origin at (ox, oy), at least `gap` tiles from everything else?
+/** @param {Plot} p */
 export function landFits(p, ox, oy, grid) {
   for (const k of landIndex(p).keys()) {
     const [x, y] = k.split(',').map(Number);
@@ -106,6 +112,7 @@ export function landFits(p, ox, oy, grid) {
 // p.spent is what it has spent, in coins (p.coins marks gardens counted that way; older ones
 // counted "materials", 40 coins each).
 export const COIN_TOKENS = 100, COIN_START = 250;
+/** @param {Plot} p */
 export function wallet(p) {
   if (!p.coins) {
     p.spent = (p.spent || 0) * 40;
@@ -122,9 +129,11 @@ export const OLD_FARM = (() => {
   return tiles.sort((a, b) => Math.hypot(a[0] - 2.6, a[1] - 1.8) - Math.hypot(b[0] - 2.6, b[1] - 1.8));
 })();
 
+/** @param {Plot} p */
 export function migrateLand(p) {
   if (p.pieces) return;
   p.pieces = [];
+  /** @type {Record<string, number>} */
   const wild = {};
   for (let i = 0; i < (p.dug || 0); i++) {
     const [x, y] = OLD_FARM[i];
@@ -141,6 +150,7 @@ export function migrateLand(p) {
 }
 
 // Demo gardens (MOCHI_DEMO): something built, scaled to the plot's tokens.
+/** @param {Plot} p */
 export function demoLand(p) {
   p.pieces = [];
   p.wild = {};
@@ -160,6 +170,7 @@ export function demoLand(p) {
 export const buildSeconds = (pc) => Math.min(6, 0.9 + (pieceDef(pc.k).cost / 40) * 0.3); // bigger things take longer
 
 // The mochi's next job: the oldest piece still waiting to be built. It goes even mid-answer.
+/** @param {Plot} p */
 export function farmJob(p) {
   if (!p.live || !p.built || p.x == null) return null;
   const pc = (p.pieces || []).find((q) => q.b < 1);
@@ -170,6 +181,7 @@ export function farmJob(p) {
 }
 
 // Carrying a harvested crop over to a neighbour (build.js harvest): walk up beside them.
+/** @param {Plot} p */
 export function giftJob(p) {
   const e = p.errands?.[0];
   if (!e) return null;
@@ -184,6 +196,7 @@ export function giftJob(p) {
   return { kind: 'gift', e, to, x: to.m.x + 13, y: to.m.y + 2 };
 }
 
+/** @param {Plot} p */
 export function workFarmJob(p, job, dt, t) {
   if (job.kind === 'gift') {
     // handed over: hearts all round
@@ -243,6 +256,7 @@ export function digSound(wood) {
 // Seeds -------------------------------------------------------------------------------------
 
 // Where a seed lands: mostly on soil (that's what it grows), otherwise on or around the garden.
+/** @param {Plot} p */
 export function landingSpot(p) {
   const soil = (p.pieces || []).filter((q) => q.k === 'soil' && q.b >= 1);
   let tx, ty;
@@ -298,6 +312,10 @@ export function cropStage(w) {
 
 // Drawing -----------------------------------------------------------------------------------
 
+/**
+ * @param {Plot} p
+ * @param {Piece} pc
+ */
 export function pieceOpts(p, pc, t) {
   const land = landIndex(p), layer = pieceDef(pc.k).layer === 'ground' ? 'ground' : 'object';
   return {
@@ -311,6 +329,7 @@ export function pieceOpts(p, pc, t) {
 }
 
 // Ground layer: wildflowers, ground pieces (soil, paths, water, beds) and the crops on the soil.
+/** @param {Plot} p */
 export function drawFarmBack(g, p, t) {
   if (!p.pieces) return;
   const land = landIndex(p);
@@ -337,6 +356,7 @@ export function drawFarmBack(g, p, t) {
 }
 
 // Standing pieces, for the depth sort with mochis and desks: each by the bottom of its tiles.
+/** @param {Plot} p */
 export function landItems(g, p, t) {
   const out = [];
   for (const pc of p.pieces || []) {
@@ -348,6 +368,7 @@ export function landItems(g, p, t) {
 }
 
 // Sign texts, drawn at screen resolution so they stay sharp (garden.js, world-anchored).
+/** @param {Plot} p */
 export function drawLandTexts(ctx, p) {
   const S = Garden.S;
   for (const pc of p.pieces || []) {

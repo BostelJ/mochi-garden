@@ -23,6 +23,7 @@ export function weekStats() {
   return Garden.week;
 }
 
+/** @param {Plot} p */
 export function noteWeekTokens(p, n) {
   if (!n || Usage.demo) return;
   const w = weekStats();
@@ -59,6 +60,7 @@ export function showHarvest(w) {
   Usage.springAt = t; // and spring petals fly (sky.js)
   const best = Object.entries(w.per).sort((a, b) => b[1] - a[1])[0];
   const bestPlot = best && (Garden.allPlots || Garden.plots).find((p) => p.id === best[0]);
+  /** @type {(string | Node)[]} */
   const lines = [
     `${fmtTokens(w.tokens)} grown`,
     `${w.sessions.length} session${w.sessions.length === 1 ? '' : 's'} tended`,

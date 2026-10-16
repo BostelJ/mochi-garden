@@ -15,6 +15,7 @@ export const ui = { activeTab: /** @type {string | null} */ (null) };
 export const $ = (sel) => document.querySelector(sel);
 export const uuid = () => crypto.randomUUID();
 
+/** @param {Plot} plot */
 export function tabOfPlot(plot) {
   for (const t of tabs.values()) if (t.plot === plot) return t;
   return null;

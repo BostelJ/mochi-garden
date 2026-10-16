@@ -7,6 +7,7 @@ import { prop } from './sprites.js';
 
 export const VISIT_EVERY = 45; // seconds, on average, between visits for an idle mochi
 
+/** @param {Plot} p */
 export function visitTarget(p, dt, t) {
   const m = p.m;
   if (!p.live || p.activity !== 'idle' || !p.built) {
@@ -47,6 +48,7 @@ export function visitTarget(p, dt, t) {
 export const HEART = ['.p.p.', 'ppppp', 'ppppp', '.ppp.', '..p..'];
 
 // Little hearts over a mochi that's visiting, or being visited.
+/** @param {Plot} p */
 export function drawHearts(g, p, x, y, t) {
   const m = p.m;
   const on = (m.heartAt && t - m.heartAt < 0.2) || (m.greetAt && t - m.greetAt < 2.5);

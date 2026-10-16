@@ -22,11 +22,13 @@ export function miniSprite(flavour) {
 }
 
 // PreToolUse(Agent) tells us what the agent is for; SubagentStart follows with its id.
+/** @param {Plot} p */
 export function noteAgentCall(p, input) {
   p.pendingAgents = p.pendingAgents || [];
   p.pendingAgents.push((input && (input.description || input.subagent_type)) || 'helper');
 }
 
+/** @param {Plot} p */
 export function spawnHelper(p, id, type, t) {
   if (!p.m || p.x == null) return;
   p.helpers = p.helpers || [];
@@ -49,11 +51,13 @@ export function spawnHelper(p, id, type, t) {
   throwSound(p);
 }
 
+/** @param {Plot} p */
 export function helperWorked(p, id, t) {
   const h = p.helpers && p.helpers.find((x) => x.id === id);
   if (h) h.lastWork = t;
 }
 
+/** @param {Plot} p */
 export function helperDone(p, id, tokens, t) {
   const h = p.helpers && p.helpers.find((x) => x.id === id);
   if (!h) {
@@ -65,6 +69,7 @@ export function helperDone(p, id, tokens, t) {
 }
 
 // Subagent tokens live in their own transcripts, so they're tracked beside the main count.
+/** @param {Plot} p */
 export function addAgentTokens(p, n) {
   p.agentTokens = (p.agentTokens || 0) + n;
   p.tokens = (p.mainTokens || 0) + p.agentTokens;
@@ -73,6 +78,7 @@ export function addAgentTokens(p, n) {
   Garden.dirty = true;
 }
 
+/** @param {Plot} p */
 export function updateHelpers(p, dt, t) {
   if (!p.helpers) return;
   for (const h of p.helpers) {
@@ -114,6 +120,7 @@ export function updateHelpers(p, dt, t) {
   p.helpers = p.helpers.filter((h) => h.state !== 'gone');
 }
 
+/** @param {Plot} p */
 export function drawHelpers(g, p, t) {
   if (!p.helpers) return;
   const spr = miniSprite(p.flavour);
@@ -143,6 +150,7 @@ export function drawHelpers(g, p, t) {
 }
 
 // Each helper's task, small, under it (screen resolution).
+/** @param {Plot} p */
 export function drawHelperLabels(ctx, p) {
   if (!p.helpers) return;
   const S = Garden.S;
@@ -164,11 +172,13 @@ export function drawHelperLabels(ctx, p) {
   }
 }
 
+/** @param {Plot} p */
 export function throwSound(p) {
   if (!Sound.on || document.hidden) return;
   tone(440, 0, { gain: 0.04, dur: 0.18, type: 'triangle', drop: 2.2 }); // whoop up
 }
 
+/** @param {Plot} p */
 export function mergeSound(p) {
   if (!Sound.on || document.hidden) return;
   tone(1046.5, 0, { gain: 0.04, dur: 0.2, type: 'triangle', drop: 0.6 });

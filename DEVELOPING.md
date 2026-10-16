@@ -3,6 +3,28 @@
 Notes for working on the app. The user-facing overview is in [README.md](README.md); cutting a
 release is in [RELEASING.md](RELEASING.md).
 
+## Code layout and checks
+
+- The page (`ui/`) is plain JavaScript as ES modules, with no build step: `index.html` loads
+  `main.js`, and every file imports what it uses. `tauri.js` is the bridge to the Rust side (and a
+  no-op outside the app, so the modules also load in Node).
+  - Sessions: `state.js` (plots, tabs, the tab in front), `persist.js` (garden.json),
+    `sessions.js` (open/end/switch, the session list), `events.js` (hooks, tokens, the session
+    registry), `demo.js` (MOCHI_DEMO), `main.js` (startup and wiring).
+  - The garden: `garden.js` (world, camera, mochis), `farm.js` (land, coins, crops), `build.js`
+    (the sessions' garden tools), `pieces.js`, `wardrobe.js`, `desk.js`, `town.js`, `sky.js`,
+    `seeds.js`, `helpers.js`, `social.js`, `rewards.js`, `harvest.js`, `cards.js`, `usage.js`.
+- `npm run check`: TypeScript checks the JavaScript through its JSDoc (`tsconfig.json`; the core
+  shapes, like `Plot` and `Piece`, are in `ui/types.d.ts`). Nothing is compiled.
+- `npm test`: Node's test runner on the garden's rules (`tests/`): coins, building and removing,
+  placement, harvest, dressing up. `tests/setup.mjs` stands in for just enough of a browser.
+- Rust: `cargo test --lib --manifest-path src-tauri/Cargo.toml`.
+- GitHub runs all three on every push (`.github/workflows/check.yml`).
+- In the app's devtools console, `mochi` holds every module's exports (`mochi.plots`,
+  `mochi.buildPieces(...)`), which is how `tools/console.py` drives a test garden.
+- The art preview tools (`tools/render_*.mjs`) run some page files as plain scripts in Node;
+  `tools/ui-script.mjs` strips the module syntax for them.
+
 Real Claude Code sessions in terminals beside a pixel garden. Each session is a mochi: it walks
 in, builds a bench while the first answer is written, shows `!` when it's done and you haven't
 looked, `?` when it needs you, and its plot grows with the session's lifetime tokens. While it

@@ -19,6 +19,7 @@ export function describeTool(name, input = {}) {
 }
 
 // From hook events (app.js): remember what a "?" is about, and forget it when it's answered.
+/** @param {Plot} p */
 export function notePending(p, ev, raw) {
   if (ev.event === 'PermissionRequest') p.pending = { kind: 'perm', tool: raw.tool_name, detail: describeTool(raw.tool_name, raw.tool_input) };
   else if (ev.event === 'PreToolUse' && raw.tool_name === 'AskUserQuestion') {
@@ -30,6 +31,7 @@ export function notePending(p, ev, raw) {
   if (Cards.plot === p) renderCard();
 }
 
+/** @param {Plot} p */
 export function openCard(p) {
   Cards.plot = p;
   renderCard();

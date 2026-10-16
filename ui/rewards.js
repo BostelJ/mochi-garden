@@ -7,6 +7,7 @@ import { FLAVOUR_ORDER } from './sprites.js';
 
 export const STREAK_GAP_MS = 8 * 60 * 1000;
 
+/** @param {Plot} p */
 export function activeStreak(p) {
   if (!p.streak) return 0;
   if (p.live && p.activity === 'working') return p.streak;
@@ -15,12 +16,14 @@ export function activeStreak(p) {
 }
 
 // 0 none, 1 warm (x3: golden seeds), 2 hot (x5: sparkle trails, glowing plot), 3 blazing (x8: every colour).
+/** @param {Plot} p */
 export function streakLevel(p) {
   const s = activeStreak(p);
   return s >= 8 ? 3 : s >= 5 ? 2 : s >= 3 ? 1 : 0;
 }
 
 // Called when a prompt is sent; returns true when the streak just reached a new level.
+/** @param {Plot} p */
 export function bumpStreak(p) {
   const before = streakLevel(p);
   const now = Date.now();
@@ -33,6 +36,7 @@ export function bumpStreak(p) {
   return up;
 }
 
+/** @param {Plot} p */
 export function drawStreakGlow(ctx, p, t) {
   const level = streakLevel(p);
   if (level < 2 || p.x == null) return;
@@ -111,6 +115,7 @@ export function tone(freq, at, { gain = 0.05, dur = 0.35, type = 'sine', drop = 
 export const POP_SCALE = [523.25, 587.33, 659.25, 783.99, 880, 1046.5];
 export const FLAVOUR_KEY = [1, 1.122, 0.891, 1.26, 0.794, 1.059, 0.944, 1.189];
 
+/** @param {Plot} p */
 export function seedPop(p) {
   if (!Sound.on || document.hidden) return;
   const now = performance.now();

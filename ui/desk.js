@@ -24,10 +24,12 @@ export const DK = {
 };
 
 // The desk stands in the plot's desk corner; its bottom-left, in world px.
+/** @param {Plot} p */
 export function deskOrigin(p) {
   return { x: p.x * TILE + 4, y: p.y * TILE + 40 };
 }
 
+/** @param {Plot} p */
 export function updateTypewriter(p, dt, t) {
   p.tw = p.tw || { col: 0, line: 0, key: 0, keyAt: -1, acc: 0, dingAt: -1, pages: [] };
   const tw = p.tw;
@@ -57,6 +59,7 @@ export function updateTypewriter(p, dt, t) {
   tw.pages = tw.pages.filter((pg) => t - pg.t < 2.2);
 }
 
+/** @param {Plot} p */
 export function drawDesk(g, p, t) {
   const d = deskOrigin(p);
   const x = d.x, y = d.y - DESK_H;
@@ -148,6 +151,7 @@ export function drawDeskBody(g, x, y) {
 }
 
 // Cream typewriter (16 x 8 body at x, y) with its carriage, roller and paper above.
+/** @param {Plot} p */
 export function drawTypewriter(g, p, x, y, t) {
   const tw = p.tw || { col: 0, line: 0, keyAt: -1, dingAt: -1 };
   // the carriage slides left as the line fills and snaps back on the ding

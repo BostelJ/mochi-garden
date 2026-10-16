@@ -182,6 +182,7 @@ export const TownArt = (() => {
   }
 
   const cache = new Map();
+  /** @param {string} key @param {() => string[]} build @param {Record<string, string>} [pal] */
   const spr = (key, build, pal = PAL) => {
     if (!cache.has(key)) cache.set(key, gridCanvas(build(), (ch) => (ch in pal ? pal[ch] : PAL[ch])));
     return cache.get(key);

@@ -50,6 +50,7 @@ export async function onGardenCall({ id, tab, name, args }) {
 }
 
 // Can a piece of kind k go at plot tile (x, y)? Returns null when it can, else why not.
+/** @param {Plot} p */
 export function whyNot(p, k, x, y, grid, reach) {
   const def = PIECES[k];
   if (!def) return `there's no piece called "${k}"`;
@@ -68,6 +69,7 @@ export function whyNot(p, k, x, y, grid, reach) {
 }
 
 // Every tile within REACH of the garden as it stands.
+/** @param {Plot} p */
 export function reachOf(p) {
   const out = new Set();
   for (const k of landIndex(p).keys()) {
@@ -79,6 +81,7 @@ export function reachOf(p) {
 
 export const an = (k) => (/^[aeiou]/.test(k) ? 'an ' : 'a ') + k;
 
+/** @param {Plot} p */
 export function buildPieces(p, items) {
   if (!Array.isArray(items) || !items.length) return { text: 'Nothing to build: give items like [{ "piece": "tree", "x": 4, "y": 1 }].', error: true };
   if (items.length > MAX_ITEMS) return { text: `That's a lot at once: up to ${MAX_ITEMS} pieces per build, please.`, error: true };
@@ -120,6 +123,7 @@ export function buildPieces(p, items) {
   return { text: `${head}\n${lines.join('\n')}\nWallet: ${wallet(p).toLocaleString('en')} coins.`, error: !built };
 }
 
+/** @param {Plot} p */
 export function removePieces(p, tiles) {
   if (!Array.isArray(tiles) || !tiles.length) return { text: 'Which tiles? Give tiles like [{ "x": 4, "y": 1 }].', error: true };
   const lines = [];
@@ -148,6 +152,7 @@ export function removePieces(p, tiles) {
 export const SLOTS = ['head', 'neck', 'face', 'back'];
 
 // What a mochi wears: its own choice once it has dressed, else what its age has earned it.
+/** @param {Plot} p */
 export function outfitOf(p) {
   if (p.outfit) return p.outfit;
   const tokens = p.tokens || 0, out = {};
@@ -156,6 +161,7 @@ export function outfitOf(p) {
   return out;
 }
 
+/** @param {Plot} p */
 export function dress(p, wear, takeOff) {
   const lines = [];
   const outfit = { ...outfitOf(p) };
@@ -204,6 +210,7 @@ export function describeOutfit(o) {
   return parts.length ? parts.join(', ') : 'nothing';
 }
 
+/** @param {Plot} p */
 export function nameMochi(p, name) {
   const n = String(name ?? '').replace(/[\u0000-\u001f\u007f]/g, '').replace(/\s+/g, ' ').trim().slice(0, 20);
   const before = p.name;
@@ -224,6 +231,7 @@ export const TASTE = {
 export const cropName = (k) => (k === 'gold' ? 'golden pumpkin' : k === 'crystal' ? 'crystal flower' : k);
 export const mochiName = (o) => o.name || (o.title ? `the "${o.title}" mochi` : 'a new mochi');
 
+/** @param {Plot} p */
 export function harvest(p, { x, y, gift, then, to }) {
   then = String(then || '').toLowerCase();
   if (then !== 'eat' && then !== 'gift') return { text: 'Say what to do with it: then "eat" or "gift".', error: true };
@@ -272,6 +280,7 @@ export function receiveGift(from, to, k) {
   Garden.dirty = true;
 }
 
+/** @param {Plot} p */
 export function lookText(p) {
   const land = landIndex(p), grid = occupancy(p, 1), reach = reachOf(p);
   let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
@@ -337,6 +346,7 @@ export function lookText(p) {
   ].filter((l, i, a) => l !== '' || a[i - 1] !== '').join('\n');
 }
 
+/** @param {Plot} p */
 export function direction(p, o) {
   const dx = o.x - p.x, dy = o.y - p.y;
   const ns = dy < -2 ? 'north' : dy > 2 ? 'south' : '';

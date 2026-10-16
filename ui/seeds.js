@@ -14,6 +14,7 @@ export const SEED_CAP = 700; // most seeds alive at once across the garden
 
 export const Seeds = { list: [] };
 
+/** @param {Plot} p */
 export function updateSeeds(p, dt, t) {
   const m = p.m;
   const placed = p.x != null && m && !m.walking;
@@ -40,6 +41,7 @@ export function updateSeeds(p, dt, t) {
 }
 
 // `from` is a helper mochi's position when the seed is its own (seeds.js callers pass nothing).
+/** @param {Plot} p */
 export function spawnSeed(p, t, from) {
   const m = p.m;
   const sx = from ? from.x : m.x + 6, sy = from ? from.y : m.y + 1;
@@ -53,6 +55,7 @@ export function spawnSeed(p, t, from) {
 }
 
 // Streak 0: mostly gold with the mochi's colour; 1+: almost all gold; 3: every flavour.
+/** @param {Plot} p */
 export function seedColour(p, level) {
   const f = FLAVOURS[p.flavour] || FLAVOURS.terracotta;
   const r = Math.random();

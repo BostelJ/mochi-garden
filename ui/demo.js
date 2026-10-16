@@ -37,6 +37,7 @@ export function devTypePrompt(tab, prompt) {
 // MOCHI_DEMO=1: one plot per growth stage, for looking at the art. No session id, so never saved.
 export function demoGarden(only) {
   Usage.demo = true; // fake usage below must not overwrite the real remembered numbers
+  /** @type {[string, string, number, Plot['activity'], Plot['bubble']][]} */
   const demo = [
     ['terracotta', 'fix login redirect', 4e3, 'working', null],
     ['matcha', 'shop page icons', 90e3, 'idle', '!'],
@@ -48,7 +49,8 @@ export function demoGarden(only) {
     ['vanilla', 'dark mode', 4.2e6, 'working', null],
   ];
   for (const [flavour, title, tokens, activity, bubble] of demo) {
-    const p = { id: uuid(), sessionId: null, flavour, title, tokens, built: true, live: activity !== 'sleep', activity, bubble, seed: Math.random() * 6, pieces: [] };
+    /** @type {Plot} */
+    const p = { id: uuid(), x: null, y: null, sessionId: null, flavour, title, tokens, built: true, live: activity !== 'sleep', activity, bubble, seed: Math.random() * 6, pieces: [] };
     plots.push(p);
     Garden.plots.push(p);
     placePlot(p);

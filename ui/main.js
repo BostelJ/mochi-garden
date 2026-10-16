@@ -12,7 +12,7 @@ import { closeTab, markSeen, newSession, pickPlot, resendOverlay, renderList, se
 import { $, Quality, Tray, plots, tabOfPlot, tabs, ui } from './state.js';
 import { emitTo, invoke, listen } from './tauri.js';
 import { onAppShortcut, onCloseRequested } from './terminal.js';
-import { onUpdateFailed, onUpdateReady } from './update.js';
+import { onUpdateFailed, onUpdateReady, watchForUpdates } from './update.js';
 import { onUsage, renderUsageBar } from './usage.js';
 
 // Every module's exports on window.mochi, for poking at the garden from the devtools console
@@ -119,6 +119,7 @@ async function main() {
   // a mochi peeking over the taskbar was clicked (overlay.html), or the overlay (re)loaded
   await listen('overlay-ready', resendOverlay);
   await listen('open-tab', ({ payload: tab }) => tabs.has(tab) && select(tab));
+  watchForUpdates();
   await listen('update-ready', onUpdateReady);
   await listen('update-failed', onUpdateFailed);
   setInterval(checkHarvest, 30000);

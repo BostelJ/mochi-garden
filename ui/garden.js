@@ -233,6 +233,7 @@ export function drawGrass(cols, rows, pal = seasonPalette(weekLeft())) {
 // The first plot goes in the middle of the world; each new one settles near the others, with
 // room around it to grow (a garden is whatever shape its session builds: farm.js, build.js), so
 // the garden grows outward and the camera eases out to keep it all in view.
+/** @param {Plot} plot */
 export function placePlot(plot) {
   plot.pieces = plot.pieces || [];
   const others = Garden.plots.filter((p) => p !== plot && p.x != null);
@@ -263,23 +264,27 @@ export function placePlot(plot) {
 }
 
 // A packed-away garden coming back keeps its old spot unless something has moved in since.
+/** @param {Plot} plot */
 export function returnPlot(plot) {
   if (plot.x == null) return;
   if (!landFits(plot, plot.x, plot.y, occupancy(plot, 1))) placePlot(plot);
 }
 
 // Asleep at its desk: an open tab whose claude has stopped (not one walking in or packing up).
+/** @param {Plot} p */
 export function isAsleep(p) {
   return !p.live && p.activity !== 'arriving' && p.activity !== 'leaving';
 }
 
 // Where a plot's mochi sits: behind its desk; asleep, it naps beside it.
+/** @param {Plot} plot */
 export function homeSpot(plot) {
   const asleep = isAsleep(plot);
   // in front of the desk, facing the typewriter (asleep: slumped a little lower)
   return asleep ? { x: plot.x * TILE + 18, y: plot.y * TILE + 37 } : { x: plot.x * TILE + 18, y: plot.y * TILE + 33 };
 }
 
+/** @param {Plot} p */
 export function atHome(p) {
   return p.x != null && p.m && !p.m.walking && Math.hypot(p.m.x - homeSpot(p).x, p.m.y - homeSpot(p).y) < 1;
 }
@@ -299,6 +304,7 @@ export function plotAt(cssX, cssY) {
 
 // Behaviour ------------------------------------------------------------------------------
 
+/** @param {Plot} plot */
 export function spawnMochi(plot, fromEdge) {
   if (fromEdge) {
     // walks in from the left edge of whatever is in view
@@ -431,6 +437,7 @@ export function drawGarden(t) {
 }
 
 // Clothes it chose (build.js dress), or what its age earned it; back items go under the body.
+/** @param {Plot} p */
 export function drawOutfit(g, p, x, y, pose, layer) {
   const o = outfitOf(p);
   // seen from behind, a cape or backpack covers the body instead of peeking out from under it
@@ -438,6 +445,7 @@ export function drawOutfit(g, p, x, y, pose, layer) {
   for (const slot of order[layer]) if (o[slot] && WEAR[o[slot].i]) drawWear(g, o[slot].i, o[slot].c, x, y, pose);
 }
 
+/** @param {Plot} p */
 export function drawMochi(g, p, t) {
   const m = p.m;
   const asleep = isAsleep(p);
@@ -519,6 +527,7 @@ export function drawMochi(g, p, t) {
 }
 
 // Signs stand above the farm half of the plot, clear of the mochi's bubble.
+/** @param {Plot} p */
 export function signX(p) {
   return (p.x + 3) * TILE + 1;
 }
@@ -532,6 +541,7 @@ export const SIGN_CREAM = '#fff6e2';
 export const signBigPx = (S) => Math.max(9, 4 * S);
 export const signSmallPx = (S) => Math.max(8, 3.4 * S);
 
+/** @param {Plot} p */
 export function drawSign(ctx, p) {
   const S = Garden.S;
   const px = signX(p) * S, py = (p.y * TILE + 1) * S;

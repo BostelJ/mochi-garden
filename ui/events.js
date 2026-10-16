@@ -139,6 +139,7 @@ export function onRegistry(list) {
 // New tokens go into the mochi's bank, which garden.js pays out as seeds over the next few
 // seconds. The first read of a transcript (a resumed session's whole history) only sets the total.
 // `total` is the main transcript's count; subagents' tokens are added on top (helpers.js).
+/** @param {Plot} p */
 export function applyTokens(p, total, first) {
   const main = p.mainTokens || 0;
   if (!first && total > main) {

@@ -174,7 +174,7 @@ export function showModal({ title, lines, buttons }) {
     box.appendChild(row);
     back.appendChild(box);
     document.body.appendChild(back);
-    row.firstChild?.focus();
+    /** @type {HTMLElement} */ (row.firstChild)?.focus();
   });
 }
 

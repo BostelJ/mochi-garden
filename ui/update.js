@@ -13,8 +13,11 @@ export let updateWaiting = false;
 export let updateQuietSince = null;
 export let lastKeyAt = 0;
 
-window.addEventListener('keydown', () => (lastKeyAt = Date.now()), true);
-setInterval(tryUpdate, 1000);
+// Started by main.js: note typing, and look for a moment to install.
+export function watchForUpdates() {
+  window.addEventListener('keydown', () => (lastKeyAt = Date.now()), true);
+  setInterval(tryUpdate, 1000);
+}
 
 // A local build from `npm run ship` (no payload) or a newer release ({ version }).
 export function onUpdateReady(ev) {
