@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "Your Claude Code sessions as a growing pixel garden",
   "scripts": {
+    "tauri": "tauri",
     "ship": "node tools/ship.mjs",
     "release": "node tools/release.mjs"
   },
