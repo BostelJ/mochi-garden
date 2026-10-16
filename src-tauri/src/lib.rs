@@ -27,6 +27,9 @@ pub struct AppState {
     pub parked: Mutex<HashMap<String, std::collections::HashSet<String>>>,
     /// "<tab>/<session>" pairs already checked against the registry for parking (hooks::check_parked).
     pub checked: Mutex<std::collections::HashSet<String>>,
+    /// Free time (hooks::free_time): the page's [ free time ] toggle, and each tab's state.
+    pub free_time: std::sync::atomic::AtomicBool,
+    pub free: Mutex<HashMap<String, hooks::Free>>,
 }
 
 #[derive(Serialize)]
@@ -159,6 +162,12 @@ fn hide_main(app: tauri::AppHandle) {
     overlay::main_visibility(&app);
 }
 
+/// The page's [ free time ] toggle (hooks::free_time).
+#[tauri::command]
+fn set_free_time(state: tauri::State<AppState>, on: bool) {
+    state.free_time.store(on, std::sync::atomic::Ordering::Relaxed);
+}
+
 /// Dev switches for automated runs: MOCHI_AUTOSTART=1 opens a session on launch and
 /// MOCHI_TEST_PROMPT types a prompt into it.
 #[tauri::command]
@@ -197,6 +206,8 @@ pub fn run() {
             transcripts: Mutex::new(HashMap::new()),
             parked: Mutex::new(HashMap::new()),
             checked: Mutex::new(Default::default()),
+            free_time: std::sync::atomic::AtomicBool::new(true),
+            free: Mutex::new(HashMap::new()),
         })
         .manage(update::Update::new())
         .manage(mcp::Calls::default())
@@ -229,7 +240,8 @@ pub fn run() {
             overlay::overlay_hits,
             overlay::overlay_open,
             update::apply_update,
-            mcp::garden_reply
+            mcp::garden_reply,
+            set_free_time
         ])
         .build(context)
         .expect("error while building Mochi Garden");

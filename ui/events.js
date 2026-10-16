@@ -33,6 +33,14 @@ export function onHook(ev) {
     p.adopting = false;
     return;
   }
+  // A session on its free moment (hooks.rs free_time) is on its own time: its tools and its
+  // stop don't make it look busy, clear its "!", or chime again.
+  if (ev.free) {
+    if (ev.tokens != null) applyTokens(p, ev.tokens, ev.first || p.adopting);
+    renderList();
+    save();
+    return;
+  }
   notePending(p, ev, raw);
   switch (ev.event) {
     case 'UserPromptSubmit':

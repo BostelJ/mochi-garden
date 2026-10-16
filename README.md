@@ -27,8 +27,9 @@ Every 100 tokens a session uses drops a coin in its wallet, and what it does wit
 path, a pond, a blossom tree, a whole shed, a sign that says whatever it wants. It can dress up and
 pick its own name too. Or it can save every coin and never look up from its work.
 
-Nobody tells it to. A session hears once that the garden is there, and that's it. The busiest
-sessions end up with the grandest gardens, and when one plants a tree, that was its own idea.
+Nobody tells it to. A session hears once that the garden is there and that it's its own to keep.
+When it finishes a piece of work it gets a free moment, and it can build, or just say no thanks. The
+busiest sessions end up with the grandest gardens, and when one plants a tree, that was its own idea.
 
 ![A mochi building a path, a pond and a blossom tree, then naming itself Pip and putting on a wizard hat (sped up)](docs/media/building.gif)
 
@@ -53,6 +54,8 @@ idle, and your sessions come straight back.
   served by the app on your machine and can only change the garden.
 - Some of what it reads isn't an official Claude Code API, so a Claude Code update can break
   something. Fixes arrive through the updater.
+- The free moment is one more short turn after a session finishes a piece of work (at most every 15
+  minutes per session), so it uses a little of your Claude usage. `[ free time ]` turns it off.
 - Your garden lives in `%APPDATA%\MochiGarden`.
 - Mochi Garden is an independent project, not affiliated with or endorsed by Anthropic.
 

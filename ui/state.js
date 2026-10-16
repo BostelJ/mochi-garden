@@ -24,3 +24,5 @@ export function tabOfPlot(plot) {
 export const Tray = { on: pref('mg.tray', true) };
 // [ quality ]: the garden at the display's full refresh rate instead of 30/15 fps (garden.js).
 export const Quality = { on: pref('mg.quality', false) };
+// [ free time ]: sessions get a free moment after a turn of real work (hooks.rs free_time).
+export const FreeTime = { on: pref('mg.freetime', true) };

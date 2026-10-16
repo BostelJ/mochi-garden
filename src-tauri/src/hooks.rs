@@ -121,10 +121,12 @@ async fn hook(State(app): State<AppHandle>, UrlPath(tab): UrlPath<String>, Json(
     if check_parked(&app, &tab, body["session_id"].as_str()) {
         return Json(json!({}));
     }
+    let (on_break, reply) = free_time(&state, &tab, &body);
     let mut out = json!({
         "tab": tab,
         "event": body["hook_event_name"],
         "session_id": body["session_id"],
+        "free": on_break,
         "raw": body,
     });
     if let Some(tp) = body["transcript_path"].as_str() {
@@ -149,7 +151,64 @@ async fn hook(State(app): State<AppHandle>, UrlPath(tab): UrlPath<String>, Json(
         out["agent_tokens"] = json!(scan.total());
     }
     let _ = app.emit("claude-hook", out);
-    Json(json!({}))
+    Json(reply)
+}
+
+/// Free time: when a turn that did real work ends, the Stop hook hands the session one free
+/// moment to do whatever it likes (the garden, or nothing at all) before it stops. Offering it is
+/// what lets a session choose the garden at all: sessions told about it but never given a moment
+/// with no task in it never used it. Honest about where it comes from and that nobody's waiting.
+pub const FREE_TIME: &str = "This is Mochi Garden, not the user. They already have your answer, and nothing is waiting on you. You've earned a free moment if you want one: do whatever you like, or nothing at all.";
+/// At most one free moment per tab this often, so a quick back-and-forth isn't full of them.
+const FREE_EVERY: std::time::Duration = std::time::Duration::from_secs(15 * 60);
+
+/// A tab's free-time state (AppState::free).
+#[derive(Default)]
+pub struct Free {
+    /// the turn so far has used a tool (other than the garden's)
+    worked: bool,
+    /// the session is on its free moment: its events are its own, not work for the user
+    on_break: bool,
+    last: Option<std::time::Instant>,
+}
+
+/// Returns whether this event belongs to a free moment, and the hook's reply: a Stop that
+/// earns a free moment is turned into one more turn with FREE_TIME as its prompt.
+fn free_time(state: &AppState, tab: &str, body: &Value) -> (bool, Value) {
+    let on = state.free_time.load(std::sync::atomic::Ordering::Relaxed);
+    free_step(state.free.lock().unwrap().entry(tab.to_string()).or_default(), body, on)
+}
+
+fn free_step(f: &mut Free, body: &Value, on: bool) -> (bool, Value) {
+    match body["hook_event_name"].as_str().unwrap_or("") {
+        "UserPromptSubmit" => {
+            f.worked = false;
+            f.on_break = false;
+        }
+        "PostToolUse" => {
+            let tool = body["tool_name"].as_str().unwrap_or("");
+            if !f.on_break && !tool.starts_with(&format!("mcp__{}", crate::mcp::SERVER)) {
+                f.worked = true;
+            }
+        }
+        "Stop" if f.on_break => {
+            f.on_break = false;
+            return (true, json!({}));
+        }
+        "Stop" => {
+            let due = f.last.is_none_or(|t| t.elapsed() >= FREE_EVERY);
+            let again = body["stop_hook_active"].as_bool().unwrap_or(false);
+            if f.worked && due && !again && on {
+                f.on_break = true;
+                f.last = Some(std::time::Instant::now());
+                f.worked = false;
+                return (false, json!({ "decision": "block", "reason": FREE_TIME }));
+            }
+            f.worked = false;
+        }
+        _ => {}
+    }
+    (f.on_break, json!({}))
 }
 
 /// Between hooks, re-read each live tab's transcript a few times a second so the UI sees tokens
@@ -342,6 +401,43 @@ impl Scan {
 mod tests {
     use super::*;
     use std::io::Write;
+
+    fn ev(name: &str, tool: &str) -> Value {
+        json!({ "hook_event_name": name, "tool_name": tool, "stop_hook_active": false })
+    }
+
+    #[test]
+    fn free_time_follows_real_work_once() {
+        let mut f = Free::default();
+        let blocks = |r: &Value| r["decision"] == "block";
+        // a question answered without tools: no free moment
+        free_step(&mut f, &ev("UserPromptSubmit", ""), true);
+        assert!(!blocks(&free_step(&mut f, &ev("Stop", ""), true).1));
+        // real work: the stop becomes a free moment, and its events are the session's own
+        free_step(&mut f, &ev("UserPromptSubmit", ""), true);
+        free_step(&mut f, &ev("PostToolUse", "Edit"), true);
+        let (on_break, reply) = free_step(&mut f, &ev("Stop", ""), true);
+        assert!(!on_break && blocks(&reply) && reply["reason"] == FREE_TIME);
+        assert!(free_step(&mut f, &ev("PostToolUse", "mcp__garden__build"), true).0);
+        let (on_break, reply) = free_step(&mut f, &json!({ "hook_event_name": "Stop", "stop_hook_active": true }), true);
+        assert!(on_break && !blocks(&reply));
+        // more work soon after: not again until FREE_EVERY has passed
+        free_step(&mut f, &ev("UserPromptSubmit", ""), true);
+        free_step(&mut f, &ev("PostToolUse", "Bash"), true);
+        assert!(!blocks(&free_step(&mut f, &ev("Stop", ""), true).1));
+        f.last = Some(std::time::Instant::now() - FREE_EVERY);
+        free_step(&mut f, &ev("PostToolUse", "Bash"), true);
+        assert!(blocks(&free_step(&mut f, &ev("Stop", ""), true).1));
+    }
+
+    #[test]
+    fn free_time_needs_the_toggle_and_work_outside_the_garden() {
+        let mut f = Free::default();
+        free_step(&mut f, &ev("PostToolUse", "mcp__garden__look"), true);
+        assert!(free_step(&mut f, &ev("Stop", ""), true).1.get("decision").is_none());
+        free_step(&mut f, &ev("PostToolUse", "Read"), false);
+        assert!(free_step(&mut f, &ev("Stop", ""), false).1.get("decision").is_none());
+    }
 
     #[test]
     fn resume_into_a_background_job_is_followed() {

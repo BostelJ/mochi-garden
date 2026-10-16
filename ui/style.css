@@ -15,9 +15,10 @@ html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
 
 #panel { flex: 3; min-width: 380px; max-width: 640px; display: flex; flex-direction: column; border-left: 1px solid var(--line); }
 #panel header { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-bottom: 1px solid var(--line); letter-spacing: .06em; flex-wrap: wrap; row-gap: 4px; }
-/* too narrow for one row: the buttons move together onto a second row, right-aligned */
-#panel header #count, #panel header .tools { white-space: nowrap; }
-#panel header .tools { margin-left: auto; }
+/* too narrow for one row: the buttons move together onto a second row, right-aligned, and
+   wrap again rather than run off the edge */
+#panel header #count, #panel header button { white-space: nowrap; }
+#panel header .tools { margin-left: auto; display: flex; flex-wrap: wrap; justify-content: flex-end; column-gap: 0.6em; }
 button { background: none; border: 0; color: var(--text); font: inherit; cursor: pointer; padding: 2px 4px; }
 button:hover { color: #fff; background: #222; }
 .toggle.off { color: var(--dim); text-decoration: line-through; }

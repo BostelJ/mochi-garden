@@ -9,7 +9,7 @@ import { checkHarvest } from './harvest.js';
 import { load, restoreIds, save } from './persist.js';
 import { Sound, setPref } from './rewards.js';
 import { closeTab, markSeen, newSession, pickPlot, resendOverlay, renderList, select, sendAway, sendOverlaySettings, syncSize } from './sessions.js';
-import { $, Quality, Tray, plots, tabOfPlot, tabs, ui } from './state.js';
+import { $, FreeTime, Quality, Tray, plots, tabOfPlot, tabs, ui } from './state.js';
 import { emitTo, invoke, listen } from './tauri.js';
 import { onAppShortcut, onCloseRequested } from './terminal.js';
 import { onUpdateFailed, onUpdateReady, watchForUpdates } from './update.js';
@@ -62,6 +62,9 @@ async function main() {
   toggle($('#snd'), Sound, 'mg.sound');
   toggle($('#tray'), Tray, 'mg.tray', sendOverlaySettings);
   toggle($('#quality'), Quality, 'mg.quality', () => Garden.wake?.());
+  const sendFreeTime = () => invoke('set_free_time', { on: FreeTime.on }).catch(() => {});
+  toggle($('#free'), FreeTime, 'mg.freetime', sendFreeTime);
+  sendFreeTime();
   // Tell the tray overlay whether we're the window in front (it shows seeds only when we're not).
   // Polled, because a window that starts unfocused never fires a focus change.
   let focusSent = null;

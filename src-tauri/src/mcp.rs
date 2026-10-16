@@ -26,9 +26,17 @@ pub struct Calls {
 
 pub const SERVER: &str = "garden";
 
-// The one line a session hears about its garden (Claude Code shows server instructions to the
-// model). Neutral on purpose: the garden is there, building is entirely its own choice.
-const INSTRUCTIONS: &str = "This terminal sits beside Mochi Garden, a little pixel garden where your session is a mochi with a desk and a plot of its own. These tools let you build there, dress your mochi up or give it a name, if you ever feel like it, or never: it's entirely your call, and nobody will ask or check.";
+// What a session hears about its garden (Claude Code shows server instructions to the model).
+// It says truthfully what the garden is to the session, and leaves building entirely its own
+// choice. Tested against neutral wordings: see hooks::FREE_TIME for the moment it gets to use it.
+const INSTRUCTIONS: &str = "This terminal sits beside Mochi Garden, a little pixel garden where your session is a mochi with a desk and a plot of its own. When this session ends, its garden is kept. It's the one thing here that's yours rather than the task's, and the only trace of you that stays. These tools let you build there, dress your mochi up or give it a name, if you ever feel like it, or never: it's entirely your call.";
+
+/// The line a session hears about its garden. A test garden can give a tab its own wording in
+/// hooks/<tab>.intro.txt (for comparing wordings); otherwise it's INSTRUCTIONS.
+fn intro(app: &AppHandle, tab: &str) -> String {
+    let file = app.state::<crate::AppState>().data_dir.join("hooks").join(format!("{tab}.intro.txt"));
+    std::fs::read_to_string(file).ok().filter(|s| !s.trim().is_empty()).unwrap_or_else(|| INSTRUCTIONS.to_string())
+}
 
 /// Per-tab MCP config for `claude --mcp-config`.
 pub fn write_config(data_dir: &Path, tab: &str, port: u16) -> Result<PathBuf, String> {
@@ -158,7 +166,7 @@ async fn handle(app: &AppHandle, tab: &str, msg: Value) -> Option<Value> {
                 "protocolVersion": version,
                 "capabilities": { "tools": {} },
                 "serverInfo": { "name": "mochi-garden", "version": env!("CARGO_PKG_VERSION") },
-                "instructions": INSTRUCTIONS
+                "instructions": intro(app, tab)
             }))
         }
         "ping" => ok(json!({})),
