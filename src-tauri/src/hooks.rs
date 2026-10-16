@@ -354,7 +354,7 @@ mod tests {
         assert_eq!(scan.attached, None);
         // the real lines a Mochi tab wrote when its user resumed a running session
         writeln!(f, r#"{{"type":"system","subtype":"local_command","content":"<command-name>/resume</command-name>"}}"#).unwrap();
-        writeln!(f, r#"{{"type":"system","subtype":"local_command","content":"<local-command-stdout>Opening \"Naming Unsquared Analytics rebrand\", running in the background (88bda10c)</local-command-stdout>"}}"#).unwrap();
+        writeln!(f, r#"{{"type":"system","subtype":"local_command","content":"<local-command-stdout>Opening \"Rename the analytics app\", running in the background (88bda10c)</local-command-stdout>"}}"#).unwrap();
         writeln!(f, r#"{{"type":"continued-in","sessionId":"f9391645-ba68-46a7-851c-c0baad592c62","continuedInSessionId":"6808bef8-f7ab-4b9e-80dc-edc9269449b6"}}"#).unwrap();
         drop(f);
         scan.read(&path);
@@ -365,11 +365,11 @@ mod tests {
 
     #[test]
     fn a_parked_job_is_found_in_the_registry() {
-        // the registry when a fresh Mochi tab /resume'd into "Naming Unsquared Analytics rebrand"
+        // the registry when a fresh Mochi tab /resume'd into "Rename the analytics app"
         let reg: Vec<Value> = serde_json::from_str(r#"[
             {"sessionId":"f215e59b-203a-4a8e-a492-b7ef5404b6f0","kind":"bg","name":"f215e59b","jobId":"f215e59b","status":"idle"},
             {"sessionId":"29851d35-56ac-4a6e-9a3f-874e6e782762","kind":"interactive","name":"user-b5","nameSource":"derived","status":"idle","parkedJobId":"f215e59b"},
-            {"sessionId":"88bda10c-0000-4000-8000-000000000000","kind":"bg","name":"Naming Unsquared Analytics rebrand","jobId":"88bda10c","status":"idle"}
+            {"sessionId":"88bda10c-0000-4000-8000-000000000000","kind":"bg","name":"Rename the analytics app","jobId":"88bda10c","status":"idle"}
         ]"#).unwrap();
         assert_eq!(parked_by(&reg, "f215e59b-203a-4a8e-a492-b7ef5404b6f0").as_deref(), Some("29851d35-56ac-4a6e-9a3f-874e6e782762"));
         assert_eq!(parked_by(&reg, "88bda10c-0000-4000-8000-000000000000"), None);

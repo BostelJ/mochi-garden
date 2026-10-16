@@ -7,7 +7,7 @@ throwing off token seeds that grow flowers and crops. It shows `!` when it's don
 needs you, and you can answer it right from the garden. The terminals sit beside the garden, so it's
 also a perfectly good place to run Claude Code.
 
-<!-- TODO: a screenshot or short GIF of a busy garden -->
+![A busy garden: mochis typing at their desks, seeds popping, the sessions and a terminal on the right](docs/media/garden.gif)
 
 ## What it does
 
@@ -23,8 +23,14 @@ also a perfectly good place to run Claude Code.
   ponds, trees, a little shed...), dress up its mochi, name it, and eat or share what it grew.
   It's told once that the garden is there, and never asked or nudged again. Most sessions just do
   their work; when one decides to plant a tree or call itself something, that was its own idea.
+
+  ![A mochi building a path, a pond and a blossom tree, then naming itself Pip and putting on a wizard hat (sped up)](docs/media/building.gif)
+
 - **Mochis on your taskbar.** While you're in another app, every open session's mochi peeks up
   over the taskbar: working ones shake seeds out, `?` means one needs you. Click one to jump to it.
+
+  ![Mochis peeking over the Windows taskbar, shaking out seeds, one with a ! and one with a ?](docs/media/taskbar.gif)
+
 - **Sessions come and go.** Ending a session packs its mochi away with its garden. Resuming that
   conversation later walks it back in.
 

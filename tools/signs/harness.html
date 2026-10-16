@@ -40,9 +40,9 @@
     if (__signQuery.get('scene') === 'far') return __fullDemo(only);
     Usage.demo = true;
     const scene = [
-      ['matcha', 'roblox shop icons', 90e3, 'idle', '!', 0],
+      ['matcha', 'shop page icons', 90e3, 'idle', '!', 0],
       ['mango', 'thumbnail redo', 700e3, 'working', null, 5],
-      ['strawberry', 'ocean dynamics boat buoyancy rewrite', 220e3, 'working', null, 0],
+      ['strawberry', 'rewrite the physics step for boats', 220e3, 'working', null, 0],
     ];
     for (const [flavour, title, tokens, activity, bubble, streak] of scene) {
       const p = { id: uuid(), sessionId: null, flavour, title, tokens, built: true, live: true, activity, bubble, seed: Math.random() * 6 };

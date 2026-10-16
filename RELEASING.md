@@ -35,7 +35,6 @@ to your users: rotate it and ship a release with the new public key.
 ## Before going public
 
 - [ ] Choose a licence (MIT is the usual pick for an app like this) and add `LICENSE`.
-- [ ] Add a screenshot or GIF to the README (the TODO near the top).
 - [ ] Decide on Windows code signing. Unsigned installers show "Windows protected your PC" (More
       info → Run anyway). Options: Azure Trusted Signing (about $10/month, individuals in the US and
       Canada) or an OV certificate (about $200–400/year). Either one plugs into the release workflow.

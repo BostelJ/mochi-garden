@@ -510,14 +510,14 @@ function devTypePrompt(tab, prompt) {
 function demoGarden(only) {
   Usage.demo = true; // fake usage below must not overwrite the real remembered numbers
   const demo = [
-    ['terracotta', 'keyboard search', 4e3, 'working', null],
-    ['matcha', 'roblox shop icons', 90e3, 'idle', '!'],
-    ['strawberry', 'virginia trip', 220e3, 'working', null],
-    ['ube', 'pc shutdowns', 450e3, 'idle', '?'],
-    ['mango', 'thumbnail redo', 700e3, 'working', null],
-    ['soda', 'ocean dynamics', 1.1e6, 'idle', null],
+    ['terracotta', 'fix login redirect', 4e3, 'working', null],
+    ['matcha', 'shop page icons', 90e3, 'idle', '!'],
+    ['strawberry', 'csv import', 220e3, 'working', null],
+    ['ube', 'flaky test hunt', 450e3, 'idle', '?'],
+    ['mango', 'api rate limiter', 700e3, 'working', null],
+    ['soda', 'docs cleanup', 1.1e6, 'idle', null],
     ['sesame', 'old notes', 1.6e6, 'sleep', null],
-    ['vanilla', 'curator design', 4.2e6, 'working', null],
+    ['vanilla', 'dark mode', 4.2e6, 'working', null],
   ];
   for (const [flavour, title, tokens, activity, bubble] of demo) {
     const p = { id: uuid(), sessionId: null, flavour, title, tokens, built: true, live: activity !== 'sleep', activity, bubble, seed: Math.random() * 6, pieces: [] };
@@ -543,7 +543,7 @@ function demoGarden(only) {
   setTimeout(() => onUsage({ five_hour: { used_percentage: 3, resets_at: now + 3600 * 5 } }, performance.now() / 1000), 9000);
   // Helpers: the heavy worker throws two, which come home with their tokens a bit later.
   setTimeout(() => {
-    const w = plots.find((p) => p.title === 'thumbnail redo');
+    const w = plots.find((p) => p.title === 'api rate limiter');
     if (!w) return;
     noteAgentCall(w, { description: 'find reference art' });
     spawnHelper(w, 'demo-a', 'Explore', performance.now() / 1000);
@@ -555,8 +555,8 @@ function demoGarden(only) {
     setTimeout(() => helperDone(w, 'demo-a', 40000, performance.now() / 1000), 12000);
     setTimeout(() => (helperDone(w, 'demo-b', 25000, performance.now() / 1000), clearInterval(work)), 16000);
   }, 2500);
-  // Streaks to look at: virginia trip x3 (warm), thumbnail redo x5 (hot), curator design x9 (blazing).
-  const streaks = { 'virginia trip': 3, 'thumbnail redo': 5, 'curator design': 9 };
+  // Streaks to look at: csv import x3 (warm), api rate limiter x5 (hot), dark mode x9 (blazing).
+  const streaks = { 'csv import': 3, 'api rate limiter': 5, 'dark mode': 9 };
   for (const p of plots) if (streaks[p.title]) [p.streak, p.lastStop] = [streaks[p.title], Date.now()];
   // Fake token flow for the working ones: a light trickle, a steady worker, and a heavy burster.
   const [light, steady, heavy] = plots.filter((p) => p.activity === 'working' && !p.sessionId);
