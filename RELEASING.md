@@ -38,8 +38,7 @@ to your users: rotate it and ship a release with the new public key.
 - [ ] Decide on Windows code signing. Unsigned installers show "Windows protected your PC" (More
       info → Run anyway). Options: Azure Trusted Signing (about $10/month, individuals in the US and
       Canada) or an OV certificate (about $200–400/year). Either one plugs into the release workflow.
-- [ ] Make the repository public. Until then the updater can't read the releases (they need a
-      login), so installed copies quietly skip the update check.
+- [x] Make the repository public.
 - [ ] Publish the first release (see above).
 - [ ] Mac: the code is ready for it, but it has never been built or run on a Mac. That needs a Mac,
       and Apple's $99/year developer account for notarisation.
