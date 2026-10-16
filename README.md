@@ -38,7 +38,7 @@ also a perfectly good place to run Claude Code.
 
 1. Install [Claude Code](https://claude.com/claude-code) and sign in (run `claude` once in a
    terminal).
-2. Download the latest `Mochi Garden_x.y.z_x64-setup.exe` from
+2. Download the latest `Mochi.Garden_x.y.z_x64-setup.exe` from
    [Releases](../../releases/latest) and run it.
 
 Windows 10 and 11 for now.
