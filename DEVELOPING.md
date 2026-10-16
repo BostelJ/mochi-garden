@@ -59,14 +59,14 @@ SubagentStop brings it home with its transcript's tokens.
   `%APPDATA%\MochiGarden\garden.json`, raw events in `hooks.log`.
 - Gardens are built by their sessions, if they want to. The MCP config gives each session the app's
   `garden` tools (`src/mcp.rs`, handled in `ui/build.js`): `look` (a text map of its garden, its
-  materials, the catalog and the wardrobe), `build`, `remove`, `dress` (free: head, neck, face and
+  wallet, the catalog and the wardrobe), `build`, `remove`, `dress` (free: head, neck, face and
   back items in any colour, drawn by `ui/wardrobe.js`; until a session dresses itself, its age's
   scarf and hats show), `name` (its name goes big on the sign, the topic below) and `harvest` (eat a
   ripe crop, or have its mochi carry it to a neighbour, who finds it among its gifts in `look`).
   Nothing announces ripe crops; a session finds them only if it looks. The server's instructions are one neutral line
   saying the plot is there to use whenever it likes, or never; nothing nudges it, and the tools are
-  pre-allowed so building never asks you. Materials: 6 to start, plus 1 per 4,000 tokens the session
-  uses. A garden has no fixed shape: it's the desk corner plus whatever was built, and can grow to any
+  pre-allowed so building never asks you. Coins: a wallet of 250 to start, plus 1 coin per 100 tokens the
+  session uses; prices run from 40 (a path tile) to 1,000 (a shed). A garden has no fixed shape: it's the desk corner plus whatever was built, and can grow to any
   free grass within 2 tiles of what it already has (a tile clear of neighbours and the town square).
   The mochi walks out and builds each piece. Pieces are hand-pixelled in `ui/pieces.js` (preview:
   `node tools/render_pieces.mjs <png>`).

@@ -23,7 +23,7 @@ function pickCrop() {
 
 // Land ----------------------------------------------------------------------------------------
 
-const pieceDef = (k) => PIECES[k] || { cost: 1, layer: 'object', size: [1, 1] };
+const pieceDef = (k) => PIECES[k] || { cost: 40, layer: 'object', size: [1, 1] };
 
 function pieceTiles(pc) {
   const [w, h] = pieceDef(pc.k).size || [1, 1];
@@ -93,10 +93,16 @@ function landFits(p, ox, oy, grid) {
   return true;
 }
 
-// Materials: a few to start with, then one for every MAT_TOKENS the session spends.
-const MAT_TOKENS = 4000, MAT_START = 6;
-function materials(p) {
-  return MAT_START + Math.floor((p.tokens || 0) / MAT_TOKENS) - (p.spent || 0);
+// Each session's wallet: some coins to start with, then one for every COIN_TOKENS tokens it uses.
+// p.spent is what it has spent, in coins (p.coins marks gardens counted that way; older ones
+// counted "materials", 40 coins each).
+const COIN_TOKENS = 100, COIN_START = 250;
+function wallet(p) {
+  if (!p.coins) {
+    p.spent = (p.spent || 0) * 40;
+    p.coins = 1;
+  }
+  return COIN_START + Math.floor((p.tokens || 0) / COIN_TOKENS) - (p.spent || 0);
 }
 
 // Older gardens grew a fixed 6x4 farm: its tilled tiles become soil pieces, crops and all.
@@ -118,7 +124,8 @@ function migrateLand(p) {
   }
   if (Array.isArray(p.wild)) p.wild.forEach((n, i) => n && OLD_FARM[i] && i >= (p.dug || 0) && (wild[OLD_FARM[i].join(',')] = n));
   p.wild = wild;
-  p.spent = Math.min(p.pieces.length * (pieceDef('soil').cost || 2), MAT_START + Math.floor((p.tokens || 0) / MAT_TOKENS));
+  p.spent = Math.min(p.pieces.length * pieceDef('soil').cost, COIN_START + Math.floor((p.tokens || 0) / COIN_TOKENS));
+  p.coins = 1;
   delete p.dug;
   delete p.fenced;
   delete p.crops;
@@ -141,7 +148,7 @@ function demoLand(p) {
 
 // Building -----------------------------------------------------------------------------------
 
-const buildSeconds = (pc) => Math.min(6, 0.9 + (pieceDef(pc.k).cost || 1) * 0.3);
+const buildSeconds = (pc) => Math.min(6, 0.9 + (pieceDef(pc.k).cost / 40) * 0.3); // bigger things take longer
 
 // The mochi's next job: the oldest piece still waiting to be built. It goes even mid-answer.
 function farmJob(p) {

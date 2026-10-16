@@ -15,7 +15,7 @@ const uuid = () => crypto.randomUUID();
 
 // Persistence ------------------------------------------------------------------------------
 
-const SAVED = ['id', 'sessionId', 'flavour', 'x', 'y', 'title', 'tokens', 'agentTokens', 'built', 'created', 'cwd', 'streak', 'lastStop', 'wild', 'spent', 'name', 'outfit', 'gifts'];
+const SAVED = ['id', 'sessionId', 'flavour', 'x', 'y', 'title', 'tokens', 'agentTokens', 'built', 'created', 'cwd', 'streak', 'lastStop', 'wild', 'spent', 'coins', 'name', 'outfit', 'gifts'];
 let saveTimer = null;
 function gardenJson() {
   const data = plots
@@ -72,7 +72,7 @@ function nextFlavour() {
 
 // A new mochi walking in for a session that has no plot yet.
 function makePlot(cwd) {
-  const plot = { id: uuid(), sessionId: null, flavour: nextFlavour(), x: null, y: null, title: null, tokens: 0, built: false, created: Date.now(), seed: Math.random() * 6, cwd: cwd || null, pieces: [], wild: {}, spent: 0 };
+  const plot = { id: uuid(), sessionId: null, flavour: nextFlavour(), x: null, y: null, title: null, tokens: 0, built: false, created: Date.now(), seed: Math.random() * 6, cwd: cwd || null, pieces: [], wild: {}, spent: 0, coins: 1 };
   plots.push(plot);
   Garden.plots.push(plot);
   spawnMochi(plot, true);

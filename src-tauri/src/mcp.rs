@@ -46,13 +46,13 @@ fn tools() -> Value {
     json!([
         {
             "name": "look",
-            "description": "See your garden: a map of your plot and what's around it, the materials you have, and everything you can build.",
+            "description": "See your garden: a map of your plot and what's around it, the coins in your wallet, and everything you can buy and build.",
             "inputSchema": { "type": "object", "properties": {} },
             "annotations": { "readOnlyHint": true }
         },
         {
             "name": "build",
-            "description": "Build things in your garden; your mochi walks out and builds them. Pieces, variants and costs are listed by look.",
+            "description": "Buy things for your garden with the coins in your wallet; your mochi walks out and builds them. Pieces, variants and prices are listed by look.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -113,7 +113,7 @@ fn tools() -> Value {
         },
         {
             "name": "remove",
-            "description": "Take things out of your garden. Half of their materials come back.",
+            "description": "Take things out of your garden. Half of what they cost goes back into your wallet.",
             "inputSchema": {
                 "type": "object",
                 "properties": {

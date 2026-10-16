@@ -90,8 +90,8 @@ function buildPieces(p, items) {
       lines.push(`- ${where}: not built, ${why}`);
       continue;
     }
-    if (materials(p) < def.cost) {
-      lines.push(`- ${where}: not built, it costs ${def.cost} and you have ${materials(p)}`);
+    if (wallet(p) < def.cost) {
+      lines.push(`- ${where}: not built, it costs ${def.cost.toLocaleString('en')} coins and your wallet has ${wallet(p).toLocaleString('en')}`);
       continue;
     }
     let v = it.variant == null ? undefined : String(it.variant).toLowerCase().trim();
@@ -107,7 +107,7 @@ function buildPieces(p, items) {
     lines.push(`- ${where}${v ? ` (${v})` : ''}${txt ? ` "${txt}"` : ''}: queued`);
   }
   const head = built ? `Your mochi is off to build ${built} piece${built > 1 ? 's' : ''}.` : 'Nothing was built.';
-  return { text: `${head}\n${lines.join('\n')}\nMaterials left: ${materials(p)}.`, error: !built };
+  return { text: `${head}\n${lines.join('\n')}\nWallet: ${wallet(p).toLocaleString('en')} coins.`, error: !built };
 }
 
 function removePieces(p, tiles) {
@@ -130,7 +130,7 @@ function removePieces(p, tiles) {
     landChanged(p);
     lines.push(`- (${x}, ${y}): ${pc.k} removed`);
   }
-  return { text: `${lines.join('\n')}\n${back} material${back === 1 ? '' : 's'} back; you have ${materials(p)}.` };
+  return { text: `${lines.join('\n')}\n${back} coin${back === 1 ? '' : 's'} back in your wallet; it has ${wallet(p).toLocaleString('en')}.` };
 }
 
 // Dressing up ----------------------------------------------------------------------------------
@@ -298,7 +298,7 @@ function lookText(p) {
   const catalog = Object.entries(PIECES).map(([k, d]) => {
     const size = d.size && (d.size[0] > 1 || d.size[1] > 1) ? `, ${d.size[0]}x${d.size[1]} tiles from its top-left` : '';
     const extra = [d.variants ? `variants: ${d.variants.join(', ')}` : '', d.text ? 'takes text' : ''].filter(Boolean).join('; ');
-    return `- ${k} (${d.cost}${size}, ${d.layer === 'ground' ? 'ground' : 'stands'}): ${d.desc}${extra ? ` [${extra}]` : ''}`;
+    return `- ${k} (${d.cost.toLocaleString('en')} coins${size}, ${d.layer === 'ground' ? 'ground' : 'stands'}): ${d.desc}${extra ? ` [${extra}]` : ''}`;
   });
   const signs = (p.pieces || []).filter((pc) => pc.txt).map((pc) => `(${pc.x}, ${pc.y}) "${pc.txt}"`);
   const soil = (p.pieces || []).filter((pc) => pc.k === 'soil');
@@ -309,7 +309,7 @@ function lookText(p) {
   const wardrobe = SLOTS.map((s) => `${s}: ${Object.keys(WEAR).filter((k) => WEAR[k].slot === s).join(', ')}`);
   return [
     `You: a ${p.flavour} mochi${p.name ? ` called ${p.name}` : ' with no name yet'}, wearing ${describeOutfit(outfitOf(p))}.`,
-    `Your garden${p.title ? ` ("${p.title}")` : ''}. Materials: ${materials(p)} (you earn 1 for every ${MAT_TOKENS.toLocaleString('en')} tokens this session uses).`,
+    `Your garden${p.title ? ` ("${p.title}")` : ''}. Wallet: ${wallet(p).toLocaleString('en')} coins (you earn 1 coin for every ${COIN_TOKENS} tokens this session uses; spend them on anything below, or don't).`,
     `${(p.pieces || []).length} piece${(p.pieces || []).length === 1 ? '' : 's'} built${soil.length ? `; ${soil.length} soil tile${soil.length === 1 ? '' : 's'}, where the token seeds your work throws off grow crops${ripe.length ? ` (ripe: ${ripe.join(', ')})` : ''}` : ''}.`,
     signs.length ? `Signs: ${signs.join(', ')}.` : '',
     gifts.length ? `Gifts you've been given: ${gifts.join('; ')}.` : '',
@@ -319,7 +319,7 @@ function lookText(p) {
     ...rows,
     `Key: ${legend.join(' · ')}`,
     '',
-    'You can build (cost in materials; one ground piece and one standing piece per tile):',
+    'You can build (prices in coins; one ground piece and one standing piece per tile):',
     ...catalog,
     '',
     `Wardrobe (free; one thing per slot; colours: ${Object.keys(WEAR_COLOURS).join(', ')}, or #rrggbb):`,
