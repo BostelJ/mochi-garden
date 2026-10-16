@@ -2,7 +2,7 @@
 name = "mochi-garden"
 version = "0.1.0"
 description = "Mochi Garden: your Claude Code sessions as a growing pixel garden"
-license = "UNLICENSED"
+license = "MIT"
 edition = "2021"
 
 [lib]

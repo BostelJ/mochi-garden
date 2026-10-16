@@ -56,4 +56,4 @@ idle, and your sessions come straight back.
 - Your garden lives in `%APPDATA%\MochiGarden`.
 - Mochi Garden is an independent project, not affiliated with or endorsed by Anthropic.
 
-Building it yourself: see [DEVELOPING.md](DEVELOPING.md).
+Building it yourself: see [DEVELOPING.md](DEVELOPING.md). Mochi Garden is [MIT licensed](LICENSE).
