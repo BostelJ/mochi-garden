@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Mochi Garden signs</title>
+<link rel="stylesheet" href="../../ui/vendor/xterm.css">
+<link rel="stylesheet" href="../../ui/style.css">
+<style>#panel { display: none; }</style>
+</head>
+<body>
+<!-- The real garden, without Tauri, for rendering sign directions (template for render.mjs).
+     ?v=<variant from variants.js>&scene=close|far -->
+<div id="app">
+  <main id="garden-wrap"><canvas id="garden"></canvas></main>
+  <aside id="panel">
+    <header><span id="count"></span><span class="tools"><button id="snd"></button><button id="tray"></button><button id="new"></button></span></header>
+    <div id="usage"></div><ul id="list"></ul>
+    <div id="terms"><div id="empty"><button id="new2"></button></div></div>
+  </aside>
+</div>
+<script>window.__errors = []; addEventListener('error', (e) => __errors.push(e.message + ' @' + (e.filename || '').split('/').pop() + ':' + e.lineno)); addEventListener('unhandledrejection', (e) => __errors.push(String(e.reason && e.reason.stack || e.reason)));</script>
+<script>
+  // same layout every render, so the options differ only in their signs
+  window.__signSeed = 7;
+  Math.random = () => ((__signSeed = (__signSeed * 16807) % 2147483647) - 1) / 2147483646;
+  window.__signQuery = new URLSearchParams(location.search);
+  window.__TAURI__ = {
+    // dev_env answers a task later, so the scene override below is in place before app.js asks
+    core: { invoke: (cmd) => new Promise((r) => setTimeout(() => r(cmd === 'load_garden' ? '{}' : cmd === 'dev_env' ? { demo: true } : null))) },
+    event: { listen: async () => () => {}, emitTo: async () => {} },
+  };
+</script>
+<!-- UI_SCRIPTS: render.mjs fills in ui/index.html's scripts, so this tracks the app -->
+<script src="variants.js"></script>
+<script>
+  Sound.on = false;
+  if (SIGN_VARIANTS[__signQuery.get('v')]) drawSign = SIGN_VARIANTS[__signQuery.get('v')];
+  window.__fullDemo = demoGarden;
+  demoGarden = (only) => {
+    if (__signQuery.get('scene') === 'far') return __fullDemo(only);
+    Usage.demo = true;
+    const scene = [
+      ['matcha', 'roblox shop icons', 90e3, 'idle', '!', 0],
+      ['mango', 'thumbnail redo', 700e3, 'working', null, 5],
+      ['strawberry', 'ocean dynamics boat buoyancy rewrite', 220e3, 'working', null, 0],
+    ];
+    for (const [flavour, title, tokens, activity, bubble, streak] of scene) {
+      const p = { id: uuid(), sessionId: null, flavour, title, tokens, built: true, live: true, activity, bubble, seed: Math.random() * 6 };
+      plots.push(p);
+      placePlot(p);
+      preGrowFarm(p);
+      if (streak) [p.streak, p.lastStop] = [streak, Date.now()];
+    }
+    const now = Date.now() / 1000;
+    onUsage({ five_hour: { used_percentage: 12, resets_at: now + 3600 * 4 }, seven_day: { used_percentage: 30, resets_at: now + 86400 * 4 } }, 0);
+  };
+</script>
+</body>
+</html>

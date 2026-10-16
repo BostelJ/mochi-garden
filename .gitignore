@@ -1,0 +1,8 @@
+node_modules/
+src-tauri/target/
+src-tauri/gen/
+src-tauri/target-ship/
+src-tauri/target-*/
+*.log
+.devdata/
+tools/signs/harness.gen.html

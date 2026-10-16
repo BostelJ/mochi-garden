@@ -1,0 +1,38 @@
+# Builds the Windows installer for a version tag (npm run release -- <version> pushes one), signs
+# it for the in-app updater and attaches it, with latest.json, to a DRAFT release. Publishing the
+# draft on GitHub is what ships it: every installed Mochi Garden then picks it up.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+      - run: npm ci
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: Mochi Garden ${{ github.ref_name }}
+          releaseBody: What's new in this version.
+          releaseDraft: true
+          includeUpdaterJson: true
+          args: --bundles nsis

@@ -1,0 +1,74 @@
+/* Plain terminal-dark chrome; all the colour lives in the garden. */
+:root {
+  --bg: #141414;
+  --line: #2a2a2a;
+  --text: #d8d8d8;
+  --dim: #7a7a7a;
+  --mono: 'Cascadia Mono', Consolas, 'SF Mono', Menlo, monospace;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 13px var(--mono); overflow: hidden; }
+#app { display: flex; height: 100vh; }
+
+#garden-wrap { flex: 7; position: relative; min-width: 0; background: #a6c172; }
+#garden { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; cursor: default; }
+
+#panel { flex: 3; min-width: 380px; max-width: 640px; display: flex; flex-direction: column; border-left: 1px solid var(--line); }
+#panel header { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-bottom: 1px solid var(--line); letter-spacing: .06em; flex-wrap: wrap; row-gap: 4px; }
+/* too narrow for one row: the buttons move together onto a second row, right-aligned */
+#panel header #count, #panel header .tools { white-space: nowrap; }
+#panel header .tools { margin-left: auto; }
+button { background: none; border: 0; color: var(--text); font: inherit; cursor: pointer; padding: 2px 4px; }
+button:hover { color: #fff; background: #222; }
+.toggle.off { color: var(--dim); text-decoration: line-through; }
+
+#usage { display: flex; gap: 18px; overflow: hidden; padding: 7px 14px; border-bottom: 1px solid var(--line); color: var(--text); font-size: 12px; }
+#usage .u { display: flex; align-items: center; gap: 7px; white-space: nowrap; }
+#usage .u.none { color: var(--dim); }
+#usage .track { width: 60px; height: 5px; background: #2a2a2a; }
+#usage .fill { display: block; height: 100%; transition: width 0.8s ease, background 0.8s ease; }
+#usage .when { color: var(--dim); }
+#update { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 5px 14px; border-bottom: 1px solid var(--line); color: #8fc78f; font-size: 12px; }
+
+#list { list-style: none; margin: 0; padding: 0; max-height: 40%; overflow-y: auto; border-bottom: 1px solid var(--line); }
+#list:empty { display: none; }
+#list li { display: grid; grid-template-columns: 30px 1fr auto 18px; gap: 8px; align-items: center; padding: 6px 10px 6px 14px; border-bottom: 1px solid #1d1d1d; cursor: pointer; }
+#list li:hover { background: #1a1a1a; }
+#list li.active { background: #1f1f1f; box-shadow: inset 2px 0 0 #d8d8d8; }
+#list canvas { width: 26px; height: 22px; image-rendering: pixelated; }
+#list .title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#list .status { color: var(--dim); font-size: 12px; }
+#list .status.working { color: #8fc78f; }
+#list .status.done { color: #f0be5a; }
+#list .status.asking { color: #8fc7ff; }
+#list .close { color: var(--dim); }
+#list .close:hover { color: #e06c6c; }
+
+#terms { flex: 1; position: relative; min-height: 0; }
+.term { position: absolute; inset: 6px 4px 4px 10px; display: none; }
+.term.active { display: block; }
+.xterm-viewport::-webkit-scrollbar { width: 8px; background: var(--bg); }
+.xterm-viewport::-webkit-scrollbar-thumb { background: #2e2e2e; }
+#empty { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+#empty p { margin: 4px; }
+#empty .dim { color: var(--dim); margin-bottom: 14px; }
+#empty.hidden { display: none; }
+
+/* Garden cards: acting on a mochi without leaving the garden. Same plain chrome as the panel. */
+.card { position: absolute; z-index: 5; width: 260px; background: #141414; border: 1px solid #3a3a3a; padding: 10px 12px; color: var(--text); font: 12px var(--mono); box-shadow: 0 2px 0 #00000055; }
+.card.hidden { display: none; }
+.card-title { font-weight: bold; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card-line { color: #b8b8b8; margin-bottom: 6px; }
+.card-code { background: #1e1e1e; padding: 4px 6px; margin-bottom: 8px; color: #e9d8b4; word-break: break-all; }
+.card-input { width: 100%; box-sizing: border-box; background: #1e1e1e; border: 1px solid #333; color: var(--text); font: inherit; padding: 5px 6px; margin-bottom: 8px; outline: none; }
+.card-input:focus { border-color: #555; }
+.card-buttons { display: flex; flex-wrap: wrap; gap: 4px 8px; }
+.card-buttons .primary, .modal-buttons .primary { color: #8fc78f; }
+
+/* Dialogs (closing the app, the weekly harvest). */
+.modal-back { position: fixed; inset: 0; z-index: 20; background: #00000088; display: flex; align-items: center; justify-content: center; }
+.modal { width: 420px; background: #141414; border: 1px solid #3a3a3a; padding: 16px 18px; font: 13px var(--mono); color: var(--text); }
+.modal-title { font-weight: bold; letter-spacing: .04em; margin-bottom: 10px; }
+.modal-line { color: #b8b8b8; margin-bottom: 6px; line-height: 1.45; display: flex; align-items: center; gap: 6px; }
+.modal-line .face { width: 26px; height: 22px; image-rendering: pixelated; }
+.modal-buttons { display: flex; gap: 10px; margin-top: 14px; justify-content: flex-end; }

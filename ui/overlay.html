@@ -1,0 +1,223 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Mochi Garden seeds</title>
+<style>
+  html, body { margin: 0; height: 100%; background: transparent; overflow: hidden; }
+  canvas { width: 100%; height: 100%; image-rendering: pixelated; }
+  canvas.hover { cursor: pointer; }
+  #label {
+    position: absolute; display: none; padding: 2px 6px; white-space: nowrap; pointer-events: none;
+    font: 12px 'Cascadia Mono', Consolas, monospace; color: #d8d8d8; background: #141414; border: 1px solid #333;
+  }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="label"></div>
+<script src="sprites.js"></script>
+<script src="wardrobe.js"></script>
+<script>
+// While you're in another app, every open session's mochi peeks up over the taskbar, half
+// hidden behind it: working ones jiggle and shake token seeds out, ones that need you bounce with
+// a "?", finished ones show a "!", idle ones just sit. Click one to open its session.
+// The main window sends the mochis (app.js sendOverlaySettings); token events say how many seeds.
+const { listen } = window.__TAURI__.event;
+const { invoke } = window.__TAURI__.core;
+const S = 3; // pixel scale
+const PITCH = 16; // art px per mochi slot
+const SHOW = 7; // rows of a mochi showing above the taskbar (down to its blush)
+const canvas = document.getElementById('c');
+const g = canvas.getContext('2d');
+const label = document.getElementById('label');
+const bank = new Map(); // tab -> tokens waiting to float up
+let mochis = []; // [{ tab, flavour, activity, bubble, outfit, title }]
+let mainFocused = true;
+let enabled = true;
+let seeds = [];
+let hover = null;
+
+function resize() {
+  canvas.width = Math.round(innerWidth / S);
+  canvas.height = Math.round(innerHeight / S);
+  sendHits();
+}
+addEventListener('resize', resize);
+
+const shown = () => !mainFocused && enabled && mochis.length > 0;
+
+// Where each mochi sits, in art px: a row along the bottom, centred.
+function slots() {
+  const x0 = Math.round((canvas.width - mochis.length * PITCH) / 2) + 1;
+  return mochis.map((m, i) => ({ m, x: x0 + i * PITCH, y: canvas.height - SHOW }));
+}
+
+// The window ignores the mouse except over a mochi (src/overlay.rs polls the cursor against these).
+// Screen pixels, since the page's zoom and the monitor's scale aren't the same thing.
+let hitsSent = '';
+function sendHits() {
+  const d = devicePixelRatio;
+  const px = (v) => Math.round(v * d);
+  const rects = shown() ? slots().map((s) => ({ tab: s.m.tab, x: px((s.x - 1) * S), y: px((s.y - 4) * S), w: px(15 * S), h: px((SHOW + 4) * S) })) : [];
+  const key = JSON.stringify(rects);
+  if (key === hitsSent) return;
+  hitsSent = key;
+  invoke('overlay_hits', { rects, width: px(mochis.length * PITCH * S + 40) }).catch(() => {});
+}
+
+function slotAt(e) {
+  const x = e.clientX / S, y = e.clientY / S;
+  return slots().find((s) => x >= s.x - 1 && x < s.x + 14 && y >= s.y - 4) || null;
+}
+canvas.addEventListener('mousemove', (e) => {
+  const s = slotAt(e);
+  hover = s?.m.tab || null;
+  canvas.classList.toggle('hover', !!s);
+  if (s) {
+    label.textContent = s.m.title || 'new session';
+    label.style.display = 'block';
+    const w = label.offsetWidth;
+    label.style.left = Math.max(2, Math.min(innerWidth - w - 2, (s.x + 6) * S - w / 2)) + 'px';
+    label.style.top = (s.y - 16) * S + 'px';
+  } else label.style.display = 'none';
+});
+canvas.addEventListener('mouseleave', () => {
+  hover = null;
+  label.style.display = 'none';
+});
+canvas.addEventListener('click', (e) => {
+  const s = slotAt(e);
+  if (s) invoke('overlay_open', { tab: s.m.tab }).catch(() => {});
+});
+
+listen('main-focus', ({ payload }) => {
+  mainFocused = payload;
+  if (mainFocused) bank.clear(); // the garden shows them itself
+  sendHits();
+  wake();
+});
+listen('overlay-settings', ({ payload }) => {
+  enabled = payload.enabled;
+  mochis = payload.mochis || [];
+  sendHits();
+  wake();
+});
+listen('claude-hook', ({ payload: e }) => {
+  if (e.delta > 0 && !e.first) add(e.tab, e.delta);
+  wake();
+});
+listen('tokens', ({ payload: e }) => {
+  add(e.tab, e.delta || 0);
+  wake();
+});
+// it may load after the garden last sent its mochis: ask again
+window.__TAURI__.event.emitTo('main', 'overlay-ready').catch(() => {});
+
+function add(tab, n) {
+  if (!mainFocused && enabled && n > 0) bank.set(tab, (bank.get(tab) || 0) + n);
+}
+
+function spawn(slot) {
+  const r = Math.random();
+  const f = FLAVOURS[slot.m.flavour] || FLAVOURS.terracotta;
+  seeds.push({
+    x: slot.x + 4 + Math.random() * 4,
+    y: slot.y - 1,
+    vy: -(38 + Math.random() * 26),
+    sway: Math.random() * 6,
+    swayAmp: 2 + Math.random() * 5,
+    born: performance.now() / 1000,
+    life: 1.4 + Math.random() * 0.9,
+    colour: r < 0.55 ? '#ffd45c' : r < 0.9 ? f.b : '#fff6d8',
+  });
+}
+
+// A transparent window over the taskbar: every repaint costs the compositor, so it draws at 30 fps
+// while something moves (seeds, a working or asking mochi) and sleeps on a still frame otherwise.
+const acc = new Map();
+let last = performance.now();
+let running = false;
+function busy() {
+  return seeds.length > 0 || (shown() && mochis.some((m) => m.activity === 'working' || m.bubble || bank.get(m.tab) > 0));
+}
+function wake() {
+  if (running) return;
+  running = true;
+  last = performance.now();
+  requestAnimationFrame(frame);
+}
+function frame(now) {
+  const dt = Math.min(0.1, (now - last) / 1000);
+  last = now;
+  const t = now / 1000;
+  const row = shown() ? slots() : [];
+  for (const s of row) {
+    const tab = s.m.tab;
+    let flow = 0;
+    const b = bank.get(tab) || 0;
+    if (b > 0) {
+      const pay = Math.min(b, Math.max((b * dt) / 3, 60 * dt));
+      bank.set(tab, b - pay);
+      flow = pay / dt;
+    }
+    const rate = (s.m.activity === 'working' ? 0.8 : 0) + Math.min(25, flow / 150);
+    let a = (acc.get(tab) || 0) + rate * dt;
+    while (a >= 1) {
+      a -= 1;
+      if (seeds.length < 200) spawn(s);
+    }
+    acc.set(tab, a);
+    s.shaking = rate > 0.5;
+  }
+  g.clearRect(0, 0, canvas.width, canvas.height);
+  seeds = seeds.filter((s) => t - s.born < s.life);
+  for (const s of seeds) {
+    const age = t - s.born;
+    s.vy *= 1 - dt * 0.35;
+    s.y += s.vy * dt;
+    const x = Math.round(s.x + Math.sin(age * 3 + s.sway) * s.swayAmp * Math.min(1, age));
+    g.globalAlpha = Math.max(0, Math.min(1, (s.life - age) / (s.life * 0.4)));
+    gem(x, Math.round(s.y), s.colour);
+  }
+  g.globalAlpha = 1;
+  row.forEach((s, i) => drawPeeker(s, t, i));
+  if (!busy()) {
+    running = false; // a still frame stays up; an event wakes it
+    return;
+  }
+  setTimeout(() => requestAnimationFrame(frame), Math.max(0, 1000 / 30 - (performance.now() - now) - 4));
+}
+resize();
+wake();
+
+function drawPeeker(s, t, i) {
+  const m = s.m;
+  let x = s.x, y = s.y;
+  if (s.shaking) x += Math.sin(t * 60 + i) > 0 ? 1 : 0; // vibrating the seeds out
+  if (m.bubble === '?') y -= Math.round(Math.abs(Math.sin(t * 5 + i)) * 3); // needs you: bouncing
+  if (hover === m.tab) y -= 1;
+  const o = m.outfit || {};
+  for (const slot of WEAR_ORDER.under) if (o[slot] && WEAR[o[slot].i]) drawWear(g, o[slot].i, o[slot].c, x, y, 'idle');
+  g.drawImage(mochiSprite(m.flavour, 'idle'), x, y);
+  for (const slot of WEAR_ORDER.over) if (o[slot] && WEAR[o[slot].i]) drawWear(g, o[slot].i, o[slot].c, x, y, 'idle');
+  if (m.bubble) {
+    const bob = m.bubble === '!' && Math.sin(t * 4) > 0 ? 1 : 0;
+    g.drawImage(prop(m.bubble === '?' ? 'ask' : 'bang', m.bubble === '?' ? BUBBLE_ASK : BUBBLE_BANG), x + 8, y - 11 - bob);
+  }
+}
+
+function gem(x, y, colour) {
+  g.fillStyle = '#3a2218';
+  g.fillRect(x + 1, y, 2, 1);
+  g.fillRect(x + 1, y + 3, 2, 1);
+  g.fillRect(x, y + 1, 1, 2);
+  g.fillRect(x + 3, y + 1, 1, 2);
+  g.fillStyle = colour;
+  g.fillRect(x + 1, y + 1, 2, 2);
+  g.fillStyle = '#ffffff';
+  g.fillRect(x + 1, y + 1, 1, 1);
+}
+</script>
+</body>
+</html>

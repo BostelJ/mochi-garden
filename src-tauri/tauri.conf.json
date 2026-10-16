@@ -1,0 +1,52 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Mochi Garden",
+  "version": "0.1.0",
+  "identifier": "com.mochigarden.app",
+  "build": {
+    "frontendDist": "../ui"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "label": "main",
+        "title": "Mochi Garden",
+        "width": 1500,
+        "height": 900,
+        "minWidth": 900,
+        "minHeight": 560,
+        "backgroundColor": "#141414"
+      }
+    ],
+    "security": {
+      "csp": null
+    },
+    "macOSPrivateApi": true
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "nsis"
+    ],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "createUpdaterArtifacts": true
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDM4MEZCQkQzQjNCRjc0MEEKUldRS2RMK3owN3NQT09pWnFkWnpoNm1DMVc3MWtzeitJeW92bUhpbWtMYnZ2MXBjWTFqUnorbi8K",
+      "endpoints": [
+        "https://github.com/BostelJ/mochi-garden/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
+    }
+  }
+}

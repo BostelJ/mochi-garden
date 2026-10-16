@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Mochi Garden</title>
+<link rel="stylesheet" href="vendor/xterm.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <main id="garden-wrap"><canvas id="garden"></canvas></main>
+  <aside id="panel">
+    <header>
+      <span id="count">SESSIONS (0)</span>
+      <span class="tools">
+        <button id="snd" class="toggle" title="Sounds: seed pops, chimes">[ sound ]</button>
+        <button id="quality" class="toggle" title="Smooth: the garden at your display's full refresh rate (uses more CPU)">[ quality ]</button>
+        <button id="tray" class="toggle" title="Seeds float up from the taskbar while you're in another app">[ tray ]</button>
+        <button id="new" title="New Claude Code session (Ctrl+T)">[ + new ]</button>
+      </span>
+    </header>
+    <div id="usage" title="What's left of your 5-hour and weekly Claude limits"></div>
+    <ul id="list"></ul>
+    <div id="terms">
+      <div id="empty">
+        <p>no sessions yet</p>
+        <p class="dim">start a session to plant your first seed</p>
+        <button id="new2">[ + new session ]</button>
+      </div>
+    </div>
+  </aside>
+</div>
+<script>window.__errors = []; addEventListener("error", (e) => __errors.push(e.message + " @" + (e.filename || "").split("/").pop() + ":" + e.lineno));</script>
+<script src="vendor/xterm.js"></script>
+<script src="vendor/addon-fit.js"></script>
+<script src="vendor/addon-web-links.js"></script>
+<script src="sprites.js"></script>
+<script src="wardrobe.js"></script>
+<script src="garden.js"></script>
+<script src="pieces.js"></script>
+<script src="farm.js"></script>
+<script src="desk.js"></script>
+<script src="seeds.js"></script>
+<script src="rewards.js"></script>
+<script src="usage.js"></script>
+<script src="sky.js"></script>
+<script src="helpers.js"></script>
+<script src="social.js"></script>
+<script src="town.js"></script>
+<script src="harvest.js"></script>
+<script src="terminal.js"></script>
+<script src="cards.js"></script>
+<script src="update.js"></script>
+<script src="build.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
