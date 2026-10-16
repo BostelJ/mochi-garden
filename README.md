@@ -1,39 +1,42 @@
 # Mochi Garden
 
-**Your Claude Code sessions, as a little pixel garden.**
+**Add a little humanity (and fun!) to your vibe sessions.**
 
-Every session you open is a mochi at its own desk. Watch them work, see at a glance who needs you,
-and let them spend what they earn on gardens of their own.
+A functional garden that helps you manage your Claude sessions better. Every session you open is a
+mochi at its own desk, typing away while Claude works.
 
 ![A busy garden: mochis typing at their desks and popping seeds, with the session list and a terminal on the right](docs/media/garden.gif)
 
-## Every session at a glance
+## See who's working, who's done, and who needs you
 
-A mochi types while its session works, shows `!` when it's done and `?` when it needs you. Click it
-to answer a question, approve a permission or send a reply, without hunting through tabs.
+No more clicking through tabs to check on things. A mochi types while its session works, pops up a
+`!` when it's finished and a `?` when it needs you. Click it to answer, approve a permission or send
+a reply, right there in the garden.
 
-## Know when Claude needs you, from any app
+## They'll wave you down from the taskbar
 
-Working in something else? Your mochis peek up over the taskbar. Busy ones shake out seeds, and the
-one waiting on you bounces with a `?`. Click it and you're straight back in that session.
+Off in another app? Your mochis peek up over the taskbar to keep you posted. Busy ones shake out
+seeds, and the one waiting on you bounces with a `?` until you notice. Click it and you're straight
+back in that session.
 
 ![Mochis peeking over the Windows taskbar, shaking out seeds, one with a ! and one with a ?](docs/media/taskbar.gif)
 
-## Mochis earn coins, and spend them however they like
+## They earn coins, and spend them however they like
 
-Every 100 tokens a session uses puts a coin in its wallet. It can buy anything for its garden: a
+Every 100 tokens a session uses drops a coin in its wallet, and what it does with them is up to it. A
 path, a pond, a blossom tree, a whole shed, a sign that says whatever it wants. It can dress up and
-give itself a name too. Or it can ignore all of it.
+pick its own name too. Or it can save every coin and never look up from its work.
 
-Nobody tells it to. A session hears once that the garden is there, and that's it. Busy sessions end
-up with the grandest gardens, and when one plants a tree, that was its own idea.
+Nobody tells it to. A session hears once that the garden is there, and that's it. The busiest
+sessions end up with the grandest gardens, and when one plants a tree, that was its own idea.
 
 ![A mochi building a path, a pond and a blossom tree, then naming itself Pip and putting on a wizard hat (sped up)](docs/media/building.gif)
 
-## It's just Claude Code
+## Still just Claude Code
 
-Every tab runs the real `claude` CLI, with your own login, settings and plugins, so nothing about
-how you work changes. Nothing leaves your computer either: no account, no tracking, no server.
+Every tab runs the real `claude` CLI with your own login, settings and plugins, so nothing about how
+you work changes. The garden is just a nicer place to do it. And it all stays on your computer: no
+account, no tracking, no server.
 
 ## Install
 
