@@ -1,6 +1,6 @@
 {
   "name": "mochi-garden",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Your Claude Code sessions as a growing pixel garden",
   "scripts": {
     "tauri": "tauri",
