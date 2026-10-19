@@ -1,6 +1,7 @@
-# Builds the Windows installer for a version tag (npm run release -- <version> pushes one), signs
-# it for the in-app updater and attaches it, with latest.json, to a DRAFT release. Publishing the
-# draft on GitHub is what ships it: every installed Mochi Garden then picks it up.
+# Builds the Windows installer and the Mac app for a version tag (npm run release -- <version>
+# pushes one), signs them for the in-app updater and attaches them, with latest.json, to a DRAFT
+# release. Publishing the draft on GitHub is what ships it: every installed Mochi Garden then picks
+# it up.
 name: Release
 
 on:
@@ -11,7 +12,23 @@ permissions:
   contents: write
 
 jobs:
+  # One draft for both builds to upload into (two builds each making their own would race).
+  draft:
+    runs-on: ubuntu-latest
+    outputs:
+      id: ${{ steps.draft.outputs.id }}
+    steps:
+      - id: draft
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --draft \
+            --title "Mochi Garden $GITHUB_REF_NAME" --notes "What's new in this version."
+          id=$(gh api "repos/$GITHUB_REPOSITORY/releases" --jq '.[] | select(.tag_name == env.GITHUB_REF_NAME) | .id' | head -n 1)
+          echo "id=$id" >> "$GITHUB_OUTPUT"
+
   windows:
+    needs: draft
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -30,9 +47,35 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
-          tagName: ${{ github.ref_name }}
-          releaseName: Mochi Garden ${{ github.ref_name }}
-          releaseBody: What's new in this version.
-          releaseDraft: true
+          releaseId: ${{ needs.draft.outputs.id }}
           includeUpdaterJson: true
           args: --bundles nsis
+
+  # One app for Apple silicon and Intel Macs. Ad-hoc signed but not notarised yet (that needs an
+  # Apple developer account), so the first launch has to be allowed in System Settings (see README).
+  # It runs after Windows: each build rewrites latest.json, and two at once could drop an entry.
+  mac:
+    needs: [draft, windows]
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+      - run: npm ci
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          releaseId: ${{ needs.draft.outputs.id }}
+          includeUpdaterJson: true
+          args: --target universal-apple-darwin --bundles app,dmg

@@ -25,6 +25,14 @@ pub fn setup(app: &AppHandle) -> tauri::Result<()> {
         TrayIconEvent::Enter { .. } | TrayIconEvent::Move { .. } => place(tray.app_handle()),
         _ => {}
     });
+    // In a Mac menu bar the icon is a template image that macOS tints for a light or dark bar
+    // (tools/icon_mac.mjs draws it).
+    #[cfg(target_os = "macos")]
+    let icon = tauri::image::Image::from_bytes(include_bytes!("../icons/tray-mac.png")).ok().or(icon);
+    #[cfg(target_os = "macos")]
+    {
+        tray = tray.icon_as_template(true);
+    }
     if let Some(icon) = icon {
         tray = tray.icon(icon);
     }
@@ -106,7 +114,10 @@ fn show_main(app: &AppHandle) {
 }
 
 /// Stand the overlay on top of the taskbar, centred over the tray icon (or the screen's
-/// bottom-right corner when the icon is tucked into the overflow menu).
+/// bottom-right corner when the icon is tucked into the overflow menu). A Mac has no taskbar and
+/// its tray icon is up in the menu bar, so there the mochis peek up from the bottom edge of the
+/// screen in the corner beside the Dock (the work area stops at the Dock's top, which would leave
+/// them floating over the desktop).
 pub fn place(app: &AppHandle) {
     let Some(overlay) = app.get_webview_window("overlay") else { return };
     let Ok(Some(monitor)) = overlay.primary_monitor() else { return };
@@ -114,7 +125,11 @@ pub fn place(app: &AppHandle) {
     let area = monitor.work_area();
     let (w, h) = (((W * scale) as i32).max(WIDTH.load(Ordering::Relaxed) as i32), (H * scale) as i32);
     let right = area.position.x + area.size.width as i32;
-    let bottom = area.position.y + area.size.height as i32;
+    let bottom = if cfg!(target_os = "macos") {
+        monitor.position().y + monitor.size().height as i32
+    } else {
+        area.position.y + area.size.height as i32
+    };
     let mut cx = right - (60.0 * scale) as i32;
     if let Some(tray) = app.tray_by_id("main") {
         if let Ok(Some(rect)) = tray.rect() {

@@ -9,6 +9,7 @@
   canvas.hover { cursor: pointer; }
   #label {
     position: absolute; display: none; padding: 2px 6px; white-space: nowrap; pointer-events: none;
+    max-width: calc(100% - 18px); overflow: hidden; text-overflow: ellipsis;
     font: 12px 'Cascadia Mono', Consolas, monospace; color: #d8d8d8; background: #141414; border: 1px solid #333;
   }
 </style>
@@ -93,7 +94,11 @@ canvas.addEventListener('click', (e) => {
 
 listen('main-focus', ({ payload }) => {
   mainFocused = payload;
-  if (mainFocused) bank.clear(); // the garden shows them itself
+  if (mainFocused) {
+    bank.clear(); // the garden shows them itself
+    hover = null; // the mochis go, so a hover label would be left floating
+    label.style.display = 'none';
+  }
   sendHits();
   wake();
 });

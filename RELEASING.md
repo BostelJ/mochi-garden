@@ -7,8 +7,8 @@ npm run release -- 0.2.0
 ```
 
 That sets the version everywhere, commits, tags `v0.2.0` and pushes. GitHub Actions
-(`.github/workflows/release.yml`) then builds the Windows installer, signs it for the updater and
-attaches it, with `latest.json`, to a **draft** release.
+(`.github/workflows/release.yml`) then builds the Windows installer and the Mac app, signs them for
+the updater and attaches them, with `latest.json`, to a **draft** release.
 
 Nothing reaches anyone until you publish the draft:
 
@@ -39,6 +39,9 @@ to your users: rotate it and ship a release with the new public key.
       info → Run anyway). Options: Azure Trusted Signing (about $10/month, individuals in the US and
       Canada) or an OV certificate (about $200–400/year). Either one plugs into the release workflow.
 - [x] Make the repository public.
-- [ ] Publish the first release (see above).
-- [ ] Mac: the code is ready for it, but it has never been built or run on a Mac. That needs a Mac,
-      and Apple's $99/year developer account for notarisation.
+- [x] Publish the first release (see above).
+- [x] Mac: builds and runs on a Mac (tested on Apple silicon). Releases include a universal `.dmg`
+      and updater bundle, ad-hoc signed.
+- [ ] Mac notarisation. Without it the first launch needs System Settings → Privacy & Security →
+      Open Anyway. Needs Apple's $99/year developer account; then add the certificate and Apple
+      ID secrets to the release workflow's `mac` job (tauri-action reads them).

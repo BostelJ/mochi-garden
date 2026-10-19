@@ -34,7 +34,7 @@ Seeds that land on open ground plant or water flowers (`ui/plants.js`, saved per
 within 8 minutes of a mochi finishing builds a streak (`ui/rewards.js`): x3 golden seeds, x5 sparkle
 trails and a glowing plot, x8 every colour. Seeds pop with pitched sounds ([ sound ] toggle). While
 the window is in the background, every open session's mochi peeks up over the taskbar above the
-tray (`ui/overlay.html`, [ tray ] toggle): working ones jiggle and shake seeds out, a "?" bounces
+tray (on a Mac, from the screen's bottom edge in the corner beside the Dock) (`ui/overlay.html`, [ tray ] toggle): working ones jiggle and shake seeds out, a "?" bounces
 when one needs you, "!" when one is done. Clicking a mochi opens its session (the window lets
 clicks through except over a mochi: `src/overlay.rs` polls the cursor against the page's rects,
 in screen px). The taskbar button glows while mochis work.
@@ -48,7 +48,7 @@ SubagentStop brings it home with its transcript's tokens.
 
 - Install: `src-tauri/target/release/bundle/nsis/Mochi Garden_0.1.0_x64-setup.exe` (build with
   `npx tauri build --bundles nsis`), or run `src-tauri/target/release/mochi-garden.exe` directly.
-  On a Mac: `npx tauri build` makes `Mochi Garden.app` (and a .dmg) under
+  On a Mac: `npx tauri build --bundles app,dmg` makes `Mochi Garden.app` (and a .dmg) under
   `src-tauri/target/release/bundle/`; drag the app into /Applications.
 - Update your own install: `npm run ship` (works from a session inside the garden). It builds into
   `src-tauri/target-ship`, stages the build in the data folder and hands it to the running app
@@ -64,6 +64,8 @@ SubagentStop brings it home with its transcript's tokens.
 - Click a mochi for its card (`ui/cards.js`): allow/deny a permission, pick a question's answer, or
   reply in place. Idle mochis visit neighbours and the town square (`ui/social.js`, `ui/town.js`),
   which grows with the garden's lifetime tokens; each week ends with a harvest summary (`ui/harvest.js`).
+- Icons: `tools/icon.py <png>` draws the Windows one; `node tools/icon_mac.mjs` writes the Mac's
+  `icon.icns` and its menu bar template icon (`tray-mac.png`).
 - Art in `ui/art/` comes from approved concept sheets, sampled back to true pixels: crops by
   `tools/extract_crops.py`; the desk, typewriter frames, fence pieces and lantern post by
   `tools/extract_sprites.py` (cuts every object out, measuring the fake-pixel size from outlines).

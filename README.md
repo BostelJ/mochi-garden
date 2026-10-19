@@ -15,7 +15,8 @@ a reply, right there in the garden.
 
 ## They'll wave you down from the taskbar
 
-Off in another app? Your mochis peek up over the taskbar to keep you posted. Busy ones shake out
+Off in another app? Your mochis peek up over the taskbar (on a Mac, from the bottom corner of the
+screen beside the Dock) to keep you posted. Busy ones shake out
 seeds, and the one waiting on you bounces with a `?` until you notice. Click it and you're straight
 back in that session.
 
@@ -42,9 +43,14 @@ account, no tracking, no server.
 ## Install
 
 1. Install [Claude Code](https://claude.com/claude-code) and sign in (run `claude` once).
-2. Download `Mochi.Garden_x.y.z_x64-setup.exe` from [Releases](../../releases/latest) and run it.
+2. From [Releases](../../releases/latest):
+   - **Windows 10 and 11:** download `Mochi.Garden_x.y.z_x64-setup.exe` and run it.
+   - **Mac:** download `Mochi.Garden_x.y.z_universal.dmg`, open it and drag Mochi Garden into
+     Applications. It isn't notarised by Apple yet, so the first time you open it macOS says it
+     can't verify it: click **Done**, then in **System Settings → Privacy & Security** click
+     **Open Anyway**. After that it opens normally.
 
-Windows 10 and 11. Mochi Garden keeps itself up to date: new versions install once your mochis are
+Mochi Garden keeps itself up to date: new versions install once your mochis are
 idle, and your sessions come straight back.
 
 ## Good to know
@@ -56,7 +62,7 @@ idle, and your sessions come straight back.
   something. Fixes arrive through the updater.
 - The free moment is one more short turn after a session finishes a piece of work (at most every 15
   minutes per session), so it uses a little of your Claude usage. `[ free time ]` turns it off.
-- Your garden lives in `%APPDATA%\MochiGarden`.
+- Your garden lives in `%APPDATA%\MochiGarden` (on a Mac, `~/Library/Application Support/MochiGarden`).
 - Mochi Garden is an independent project, not affiliated with or endorsed by Anthropic.
 
 Building it yourself: see [DEVELOPING.md](DEVELOPING.md). Mochi Garden is [MIT licensed](LICENSE).
