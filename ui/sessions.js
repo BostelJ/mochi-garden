@@ -2,13 +2,13 @@
 
 import { outfitOf } from './build.js';
 import { Cards, closeCard, openCard } from './cards.js';
-import { Garden, placePlot, returnPlot, spawnMochi } from './garden.js';
+import { Garden, placePlot, returnPlot, setGardenCovered, spawnMochi } from './garden.js';
 import { save } from './persist.js';
-import { Sound, tone } from './rewards.js';
+import { Sound, setPref, tone } from './rewards.js';
 import { FLAVOUR_ORDER, mochiSprite } from './sprites.js';
-import { $, Tray, plots, tabOfPlot, tabs, ui, uuid } from './state.js';
+import { $, TerminalOnly, Tray, plots, tabOfPlot, tabs, ui, uuid } from './state.js';
 import { emitTo, invoke } from './tauri.js';
-import { makeTerminal } from './terminal.js';
+import { IS_MAC, makeTerminal } from './terminal.js';
 
 export function nextFlavour() {
   const used = new Set(plots.filter((p) => p.live).map((p) => p.flavour));
@@ -176,6 +176,26 @@ export function select(tab) {
   renderList();
 }
 
+// Terminal only: the garden steps aside and the terminal takes the whole window. The terminal
+// refits itself as #terms grows (the ResizeObserver in main.js).
+export function showTerminalOnly() {
+  const on = TerminalOnly.on;
+  if (on) closeCard();
+  $('#app').classList.toggle('terminal-only', on);
+  setGardenCovered(on);
+  const btn = $('#terminal-only');
+  const keys = IS_MAC ? 'Cmd+Shift+Enter' : 'Ctrl+Shift+Enter';
+  btn.textContent = on ? '[ garden ]' : '[ terminal only ]';
+  btn.title = `${on ? 'Back to the garden' : 'Fill the window with the terminal'} (${keys})`;
+  sendOverlaySettings(); // with the garden out of sight, the mochis peek up even while we're in front
+}
+export function toggleTerminalOnly() {
+  TerminalOnly.on = !TerminalOnly.on;
+  setPref('mg.terminal', TerminalOnly.on);
+  showTerminalOnly();
+  tabs.get(ui.activeTab)?.term.focus(); // keep typing, even after clicking the button
+}
+
 // The "!" clears once you are actually looking at that session.
 export function markSeen() {
   const t = tabs.get(ui.activeTab);
@@ -215,15 +235,16 @@ export function sendOverlaySettings() {
   const mochis = [...tabs.values()]
     .filter((t) => t.plot.live)
     .map(({ tab, plot: p }) => ({ tab, flavour: p.flavour, activity: p.activity, bubble: p.bubble, outfit: outfitOf(p), title: p.name ? `${p.name} · ${p.title || 'new session'}` : p.title }));
-  const msg = JSON.stringify({ enabled: Tray.on, mochis });
+  const msg = JSON.stringify({ enabled: Tray.on, terminalOnly: TerminalOnly.on, mochis });
   if (msg === overlaySent) return;
   overlaySent = msg;
   emitTo('overlay', 'overlay-settings', JSON.parse(msg)).catch(() => {});
 }
 // Sounds: tiny synthesized chimes (rewards.js), no audio files.
+// 'done' (a session finished) is the one sound "some" keeps; 'ask' and 'gift' need "all".
 export function chime(kind) {
-  if (!Sound.on) return;
-  const notes = kind === 'done' ? [880, 1318.5] : [987.8, 783.99, 987.8];
+  if (kind === 'done' ? Sound.mode === 'mute' : !Sound.on) return;
+  const notes = kind === 'ask' ? [987.8, 783.99, 987.8] : [880, 1318.5];
   notes.forEach((f, i) => tone(f, i * 0.11, { gain: 0.07, dur: 0.35 }));
 }
 

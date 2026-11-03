@@ -32,7 +32,7 @@ works it pops token seeds (`ui/seeds.js`): the app re-reads live transcripts eve
 tokens go into a per-mochi bank, and the bank pays out as seeds (one per ~120 tokens, up to 40/s).
 Seeds that land on open ground plant or water flowers (`ui/plants.js`, saved per plot). Replying
 within 8 minutes of a mochi finishing builds a streak (`ui/rewards.js`): x3 golden seeds, x5 sparkle
-trails and a glowing plot, x8 every colour. Seeds pop with pitched sounds ([ sound ] toggle). While
+trails and a glowing plot, x8 every colour. Seeds pop with pitched sounds ([ sound ] cycles some / all / mute; some is only the ding when a session finishes). While
 the window is in the background, every open session's mochi peeks up over the taskbar above the
 tray (on a Mac, from the screen's bottom edge in the corner beside the Dock) (`ui/overlay.html`, [ tray ] toggle): working ones jiggle and shake seeds out, a "?" bounces
 when one needs you, "!" when one is done. Clicking a mochi opens its session (the window lets
@@ -56,11 +56,18 @@ SubagentStop brings it home with its transcript's tokens.
   installs it once no mochi is working or asking and nothing has been typed for 20 s: a detached
   helper waits for it to quit, swaps the exe (Windows) or .app (Mac), and starts it again, back in
   the tray if it was there. Open sessions resume. If the app isn't running, ship installs at once.
+  On a Mac, run `sh tools/mac-signing-cert.sh` once first: it makes a local signing certificate, so
+  macOS keeps the app's permissions (Screen Recording, Accessibility) across your builds. Ad-hoc
+  signed builds, including public releases, each count as a new app and lose them.
 - Terminal: Ctrl+C copies a selection (else interrupts), Ctrl+V pastes, right-click copies/pastes,
   Ctrl+click opens links. Pasting a screenshot (clipboard holds only an image) sends Claude Code its
   image-paste key (Alt+V on Windows, Ctrl+V on a Mac) so it attaches the image. On a Mac, Cmd
   replaces Ctrl for the app's keys: Cmd+C/V, Cmd+click, Cmd+T/W, Cmd+1..9. App keys: Ctrl+Shift+T new, Ctrl+Shift+W end, Ctrl+Tab / Ctrl+Shift+Tab,
   Ctrl+1..9. Closing asks: keep running in the tray, or quit; open sessions come back on launch.
+- `[ terminal only ]` or Ctrl+Shift+Enter (Cmd+Shift+Enter on a Mac) hides the garden and fills the
+  window with the terminal, under one row of sessions. The mochis carry on unseen: the garden still
+  updates but isn't drawn (`Garden.covered`), and they peek up in the overlay even while the window
+  is in front (with `[ tray ]` on). The choice is remembered across launches.
 - Click a mochi for its card (`ui/cards.js`): allow/deny a permission, pick a question's answer, or
   reply in place. Idle mochis visit neighbours and the town square (`ui/social.js`, `ui/town.js`),
   which grows with the garden's lifetime tokens; each week ends with a harvest summary (`ui/harvest.js`).

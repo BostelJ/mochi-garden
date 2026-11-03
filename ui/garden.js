@@ -79,8 +79,11 @@ export function initGarden(canvas, onPick) {
     const dt = Math.min(0.1, (now - last) / 1000);
     last = now;
     updateGarden(dt, now / 1000);
-    drawGarden(now / 1000);
-    positionCard();
+    // Terminal only: the mochis carry on, but nobody's looking, so nothing is drawn.
+    if (!Garden.covered) {
+      drawGarden(now / 1000);
+      positionCard();
+    }
     // [ quality ] on: every display frame (app.js Quality)
     if (Quality.on) return void (raf = requestAnimationFrame(frame));
     const gap = 1000 / (gardenBusy(now / 1000) ? 30 : 15);
@@ -111,13 +114,27 @@ export function gardenBusy(t) {
 
 export function resizeGarden() {
   const wrap = Garden.canvas.parentElement;
+  // Hidden (terminal only): keep the last size, so the camera and the mochis' walks stay sane.
+  if (Garden.viewW && !wrap.clientWidth) return;
   const dpr = window.devicePixelRatio || 1;
   Garden.dpr = dpr;
   Garden.viewW = wrap.clientWidth;
   Garden.viewH = wrap.clientHeight;
-  Garden.canvas.width = Math.round(Garden.viewW * dpr);
-  Garden.canvas.height = Math.round(Garden.viewH * dpr);
+  // Setting a canvas's size wipes it, so leave it alone unless the size really changed.
+  const w = Math.round(Garden.viewW * dpr), h = Math.round(Garden.viewH * dpr);
+  if (Garden.canvas.width !== w) Garden.canvas.width = w;
+  if (Garden.canvas.height !== h) Garden.canvas.height = h;
   if (!Garden.grass) Garden.grass = drawGrass(WORLD_COLS, WORLD_ROWS);
+}
+
+// Terminal only hides the garden; coming back, it's drawn at once rather than a blank frame later.
+export function setGardenCovered(covered) {
+  if (covered === !!Garden.covered) return;
+  Garden.covered = covered;
+  if (covered) return;
+  resizeGarden();
+  drawGarden(performance.now() / 1000);
+  Garden.wake?.();
 }
 
 // Camera ---------------------------------------------------------------------------------

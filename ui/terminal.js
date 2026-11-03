@@ -5,10 +5,11 @@
 //   Windows: Ctrl+Shift+T new session · Ctrl+Shift+W end session · Ctrl+1..9 jump to a session
 //   Mac:     Cmd+T new session · Cmd+W end session · Cmd+1..9 jump to a session
 //   both:    Ctrl+Tab / Ctrl+Shift+Tab cycle · Shift+Enter new line
+//   Ctrl+Shift+Enter (Cmd+Shift+Enter on a Mac) terminal only, like iTerm's "maximize pane"
 // (On Windows plain Ctrl+T and Ctrl+W stay with Claude Code: task list and delete-word.)
 
 import { saveNow } from './persist.js';
-import { closeTab, newSession, select } from './sessions.js';
+import { closeTab, newSession, select, toggleTerminalOnly } from './sessions.js';
 import { tabs, ui } from './state.js';
 import { invoke } from './tauri.js';
 
@@ -109,6 +110,7 @@ export function isAppShortcut(e) {
   const k = e.key.toLowerCase();
   if (e.ctrlKey && k === 'tab') return true;
   if (!mod(e)) return false;
+  if (e.shiftKey && k === 'enter') return true;
   if ((e.shiftKey || IS_MAC) && (k === 't' || k === 'w')) return true;
   return !e.shiftKey && /^[1-9]$/.test(e.key);
 }
@@ -120,7 +122,9 @@ export function onAppShortcut(e) {
   e.stopPropagation();
   const k = e.key.toLowerCase();
   const ids = [...tabs.keys()];
-  if (k === 't') newSession();
+  if (k === 'enter') {
+    if (!e.repeat) toggleTerminalOnly(); // holding the keys shouldn't flicker between the two
+  } else if (k === 't') newSession();
   else if (k === 'w') ui.activeTab && closeTab(ui.activeTab);
   else if (k === 'tab' && ids.length) {
     const i = ids.indexOf(ui.activeTab);

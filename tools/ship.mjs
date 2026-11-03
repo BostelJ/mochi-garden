@@ -20,7 +20,7 @@ const dataDir =
 
 if (!process.argv.includes('--no-build')) {
   // Windows only needs the exe (the page is built into it); a Mac needs the .app bundle.
-  const args = ['tauri', 'build', ...(mac ? ['--bundles', 'app'] : ['--no-bundle'])];
+  const args = ['tauri', 'build', ...(mac ? ['--bundles', 'app', '--config', JSON.stringify(macConfig())] : ['--no-bundle'])];
   const r = spawnSync('npx', args, {
     cwd: root,
     stdio: 'inherit',
@@ -76,6 +76,16 @@ fs.rmSync(target, { recursive: true, force: true });
 fs.cpSync(staged, target, { recursive: true });
 fs.rmSync(path.join(dataDir, 'update'), { recursive: true, force: true });
 console.log(`Installed to ${target} (the app wasn't running).`);
+
+// This build only goes on this machine, so it skips the updater's signed archive (the key for that
+// is a release secret). It's signed with the local certificate when there is one, so macOS keeps
+// the app's permissions from one build to the next (tools/mac-signing-cert.sh).
+function macConfig() {
+  const name = 'Mochi Garden Local';
+  const hasCert = spawnSync('security', ['find-certificate', '-c', name], { stdio: 'ignore' }).status === 0;
+  if (!hasCert) console.warn(`ship: no "${name}" certificate, so macOS will forget this app's permissions. Run: sh tools/mac-signing-cert.sh`);
+  return { bundle: { createUpdaterArtifacts: false, macOS: hasCert ? { signingIdentity: name, hardenedRuntime: false } : {} } };
+}
 
 function running(pid) {
   if (!pid) return false;

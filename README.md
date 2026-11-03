@@ -62,6 +62,8 @@ idle, and your sessions come straight back.
   something. Fixes arrive through the updater.
 - The free moment is one more short turn after a session finishes a piece of work (at most every 15
   minutes per session), so it uses a little of your Claude usage. `[ free time ]` turns it off.
+- Need the room? `[ terminal only ]` or Ctrl+Shift+Enter (Cmd+Shift+Enter on a Mac) fills the window
+  with the terminal, for long answers and wide tables. The same keys bring the garden back.
 - Your garden lives in `%APPDATA%\MochiGarden` (on a Mac, `~/Library/Application Support/MochiGarden`).
 - Mochi Garden is an independent project, not affiliated with or endorsed by Anthropic.
 

@@ -204,7 +204,7 @@ export function workFarmJob(p, job, dt, t) {
     p.errands.shift();
     p.m.greetAt = t;
     job.to.m.greetAt = t;
-    chime('done');
+    chime('gift');
     return;
   }
   const m = p.m, pc = job.pc;

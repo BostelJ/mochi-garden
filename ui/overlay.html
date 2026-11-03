@@ -22,7 +22,7 @@ import { BUBBLE_ASK, BUBBLE_BANG, FLAVOURS, mochiSprite, prop } from './sprites.
 import { WEAR, WEAR_ORDER, drawWear } from './wardrobe.js';
 import { emitTo, invoke, listen } from './tauri.js';
 
-// While you're in another app, every open session's mochi peeks up over the taskbar, half
+// While you're in another app or in terminal only, every open session's mochi peeks up over the taskbar, half
 // hidden behind it: working ones jiggle and shake token seeds out, ones that need you bounce with
 // a "?", finished ones show a "!", idle ones just sit. Click one to open its session.
 // The main window sends the mochis (app.js sendOverlaySettings); token events say how many seeds.
@@ -35,6 +35,7 @@ const label = document.getElementById('label');
 const bank = new Map(); // tab -> tokens waiting to float up
 let mochis = []; // [{ tab, flavour, activity, bubble, outfit, title }]
 let mainFocused = true;
+let terminalOnly = false;
 let enabled = true;
 let seeds = [];
 let hover = null;
@@ -46,7 +47,16 @@ function resize() {
 }
 addEventListener('resize', resize);
 
-const shown = () => !mainFocused && enabled && mochis.length > 0;
+// The garden is on screen showing the mochis itself, so they're not needed down here.
+const gardenInView = () => mainFocused && !terminalOnly;
+const shown = () => !gardenInView() && enabled && mochis.length > 0;
+// The mochis have gone: nothing left to float up, and a hover label would be left floating.
+function clearIfGone() {
+  if (!gardenInView()) return;
+  bank.clear();
+  hover = null;
+  label.style.display = 'none';
+}
 
 // Where each mochi sits, in art px: a row along the bottom, centred.
 function slots() {
@@ -94,17 +104,15 @@ canvas.addEventListener('click', (e) => {
 
 listen('main-focus', ({ payload }) => {
   mainFocused = payload;
-  if (mainFocused) {
-    bank.clear(); // the garden shows them itself
-    hover = null; // the mochis go, so a hover label would be left floating
-    label.style.display = 'none';
-  }
+  clearIfGone();
   sendHits();
   wake();
 });
 listen('overlay-settings', ({ payload }) => {
   enabled = payload.enabled;
+  terminalOnly = !!payload.terminalOnly;
   mochis = payload.mochis || [];
+  clearIfGone();
   sendHits();
   wake();
 });
@@ -120,7 +128,7 @@ listen('tokens', ({ payload: e }) => {
 emitTo('main', 'overlay-ready').catch(() => {});
 
 function add(tab, n) {
-  if (!mainFocused && enabled && n > 0) bank.set(tab, (bank.get(tab) || 0) + n);
+  if (!gardenInView() && enabled && n > 0) bank.set(tab, (bank.get(tab) || 0) + n);
 }
 
 function spawn(slot) {

@@ -26,3 +26,5 @@ export const Tray = { on: pref('mg.tray', true) };
 export const Quality = { on: pref('mg.quality', false) };
 // [ free time ]: sessions get a free moment after a turn of real work (hooks.rs free_time).
 export const FreeTime = { on: pref('mg.freetime', true) };
+// [ terminal only ]: the terminal fills the window, with the sessions in one row above it.
+export const TerminalOnly = { on: pref('mg.terminal', false) };

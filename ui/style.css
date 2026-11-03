@@ -22,6 +22,7 @@ html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
 button { background: none; border: 0; color: var(--text); font: inherit; cursor: pointer; padding: 2px 4px; }
 button:hover { color: #fff; background: #222; }
 .toggle.off { color: var(--dim); text-decoration: line-through; }
+#snd.off { text-decoration: none; } /* it already says "mute" */
 
 #usage { display: flex; gap: 18px; overflow: hidden; padding: 7px 14px; border-bottom: 1px solid var(--line); color: var(--text); font-size: 12px; }
 #usage .u { display: flex; align-items: center; gap: 7px; white-space: nowrap; }
@@ -54,6 +55,18 @@ button:hover { color: #fff; background: #222; }
 #empty p { margin: 4px; }
 #empty .dim { color: var(--dim); margin-bottom: 14px; }
 #empty.hidden { display: none; }
+
+/* Terminal only: the terminal fills the window, under one row of sessions and the way back. */
+#app.terminal-only #garden-wrap, #app.terminal-only #usage, #app.terminal-only #count, #app.terminal-only .toggle { display: none; }
+#app.terminal-only #panel { flex: 1; min-width: 0; max-width: none; border-left: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto minmax(0, 1fr) auto; }
+#app.terminal-only #list { grid-area: 1 / 1; display: flex; max-height: none; overflow: auto hidden; border-bottom: 0; scrollbar-width: none; }
+#app.terminal-only #list:empty { display: none; }
+#app.terminal-only #list li { flex: 0 1 260px; min-width: 130px; grid-template-columns: 13px minmax(0, 1fr) auto 14px; gap: 6px; padding: 4px 6px 4px 10px; border-bottom: 0; border-right: 1px solid #1d1d1d; }
+#app.terminal-only #list li.active { box-shadow: inset 0 -2px 0 #d8d8d8; }
+#app.terminal-only #list canvas { width: 13px; height: 11px; }
+#app.terminal-only #panel header { grid-area: 1 / 2; padding: 3px 10px; border-bottom: 0; }
+#app.terminal-only #terms { grid-area: 2 / 1 / 3 / 3; border-top: 1px solid var(--line); }
+#app.terminal-only #update { grid-area: 3 / 1 / 4 / 3; border-top: 1px solid var(--line); border-bottom: 0; }
 
 /* Garden cards: acting on a mochi without leaving the garden. Same plain chrome as the panel. */
 .card { position: absolute; z-index: 5; width: 260px; background: #141414; border: 1px solid #3a3a3a; padding: 10px 12px; color: var(--text); font: 12px var(--mono); box-shadow: 0 2px 0 #00000055; }

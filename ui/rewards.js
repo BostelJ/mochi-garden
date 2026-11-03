@@ -68,7 +68,35 @@ export function drawFlame(ctx, x, y, s) {
 
 // Sound ---------------------------------------------------------------------------------
 
-export const Sound = { on: pref('mg.sound', true), ctx: null, lastPop: 0, lastBloom: 0 };
+// [ sound ] cycles through these. "some" is only the ding when a session finishes; every other
+// sound checks Sound.on, which means "all".
+export const SOUND_MODES = ['some', 'all', 'mute'];
+export const Sound = {
+  mode: soundPref(),
+  ctx: null,
+  lastPop: 0,
+  lastBloom: 0,
+  get on() {
+    return this.mode === 'all';
+  },
+};
+
+// Saved as the mode. Before there were three, this key held 'on' or 'off'.
+export function soundPref() {
+  try {
+    const v = localStorage.getItem('mg.sound');
+    return v === 'some' ? 'some' : v === 'mute' || v === 'off' ? 'mute' : 'all';
+  } catch {
+    return 'all';
+  }
+}
+
+export function nextSoundMode() {
+  Sound.mode = SOUND_MODES[(SOUND_MODES.indexOf(Sound.mode) + 1) % SOUND_MODES.length];
+  try {
+    localStorage.setItem('mg.sound', Sound.mode);
+  } catch {}
+}
 
 export function pref(key, dflt) {
   try {
