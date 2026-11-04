@@ -41,6 +41,15 @@ Every tab runs the real `claude` CLI with your own login, settings and plugins, 
 you work changes. The garden is just a nicer place to do it. And it all stays on your computer: no
 account, no tracking, no server.
 
+## Need the room? Terminal only
+
+One key (Cmd+Shift+Enter on a Mac, Ctrl+Shift+Enter on Windows) tucks the garden away and gives the
+terminal the whole window. Your mochis don't go anywhere: they line up down a little garden path on
+the left, grouped by project, each with its git branch. Busy ones hop and say what they're up to, the
+one that needs you holds up a `?`, and a finished one a `!`. Subagents tag along underneath.
+
+![Terminal only: sessions down a garden path on the left, grouped by project, one sending out a helper, one finishing with a !, one asking with a ?](docs/media/terminal-only.gif)
+
 ## Install
 
 1. Install [Claude Code](https://claude.com/claude-code) and sign in (run `claude` once).
