@@ -234,7 +234,12 @@ export function resendOverlay() {
 export function sendOverlaySettings() {
   const mochis = [...tabs.values()]
     .filter((t) => t.plot.live)
-    .map(({ tab, plot: p }) => ({ tab, flavour: p.flavour, activity: p.activity, bubble: p.bubble, outfit: outfitOf(p), title: p.name ? `${p.name} · ${p.title || 'new session'}` : p.title }));
+    .map(({ tab, plot: p }) => ({
+      tab, flavour: p.flavour, activity: p.activity, bubble: p.bubble, outfit: outfitOf(p),
+      title: p.name ? `${p.name} · ${p.title || 'new session'}` : p.title,
+      // its subagents, still out working (a returning one has dropped off: the overlay hops it home)
+      helpers: (p.helpers || []).filter((h) => h.state === 'thrown' || h.state === 'working').map((h) => ({ id: h.id, label: h.label })),
+    }));
   const msg = JSON.stringify({ enabled: Tray.on, terminalOnly: TerminalOnly.on, mochis });
   if (msg === overlaySent) return;
   overlaySent = msg;

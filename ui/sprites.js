@@ -90,6 +90,17 @@ export function mochiSprite(flavour, pose) {
   return c;
 }
 
+// A subagent's helper: a tiny piece of its parent, same flavour (helpers.js, overlay.html).
+export const MINI = ['..ooo..', '.obbbo.', 'obebebo', 'opbbbpo', 'obbbbso', '.ossso.', '..ooo..'];
+export function miniSprite(flavour) {
+  const key = 'mini:' + flavour;
+  if (spriteCache.has(key)) return spriteCache.get(key);
+  const f = FLAVOURS[flavour] || FLAVOURS.terracotta;
+  const c = gridCanvas(MINI, (ch) => ({ o: OUTLINE, b: f.b, s: f.s, p: f.p, e: OUTLINE })[ch]);
+  spriteCache.set(key, c);
+  return c;
+}
+
 // Props --------------------------------------------------------------------------------
 
 export const PALETTE = {

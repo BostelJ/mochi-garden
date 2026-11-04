@@ -326,6 +326,8 @@ pub struct Scan {
     partial: String,
     usage: HashMap<String, u64>,
     pub title: Option<String>,
+    /// Whether `title` is a /rename; Claude Code keeps re-appending its AI title after one, which mustn't win.
+    custom: bool,
     /// Short id of a background job this session's /resume attached to ("... running in the background (88bda10c)").
     pub attached: Option<String>,
     /// The id this session continues in once it's parked as a job of its own ("continued-in").
@@ -367,13 +369,14 @@ impl Scan {
                     }
                 }
                 Some("ai-title") => {
-                    if let Some(t) = e["aiTitle"].as_str() {
+                    if let Some(t) = e["aiTitle"].as_str().filter(|_| !self.custom) {
                         self.title = Some(t.to_string());
                     }
                 }
                 Some("custom-title") => {
                     if let Some(t) = e["customTitle"].as_str().or(e["title"].as_str()) {
                         self.title = Some(t.to_string());
+                        self.custom = true;
                     }
                 }
                 Some("system") if live && e["subtype"] == "local_command" => {
@@ -456,6 +459,21 @@ mod tests {
         scan.read(&path);
         assert_eq!(scan.attached.as_deref(), Some("88bda10c"));
         assert_eq!(scan.parked.as_deref(), Some("6808bef8-f7ab-4b9e-80dc-edc9269449b6"));
+        let _ = std::fs::remove_file(&path);
+    }
+
+    #[test]
+    fn a_rename_outlasts_the_ai_title() {
+        let path = std::env::temp_dir().join(format!("mochi-title-{}.jsonl", std::process::id()));
+        let mut f = std::fs::File::create(&path).unwrap();
+        // the real order Claude Code writes them: it re-appends its AI title after every /rename
+        writeln!(f, r#"{{"type":"ai-title","aiTitle":"Frogger city game in tradesmarkRBLX"}}"#).unwrap();
+        writeln!(f, r#"{{"type":"custom-title","customTitle":"Steal a House"}}"#).unwrap();
+        writeln!(f, r#"{{"type":"ai-title","aiTitle":"Frogger city game in tradesmarkRBLX"}}"#).unwrap();
+        drop(f);
+        let mut scan = Scan::default();
+        scan.read(&path);
+        assert_eq!(scan.title.as_deref(), Some("Steal a House"));
         let _ = std::fs::remove_file(&path);
     }
 

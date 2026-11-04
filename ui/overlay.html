@@ -18,27 +18,40 @@
 <canvas id="c"></canvas>
 <div id="label"></div>
 <script type="module">
-import { BUBBLE_ASK, BUBBLE_BANG, FLAVOURS, mochiSprite, prop } from './sprites.js';
+import { BUBBLE_ASK, BUBBLE_BANG, FLAVOURS, miniSprite, mochiSprite, prop } from './sprites.js';
 import { WEAR, WEAR_ORDER, drawWear } from './wardrobe.js';
 import { emitTo, invoke, listen } from './tauri.js';
 
 // While you're in another app or in terminal only, every open session's mochi peeks up over the taskbar, half
 // hidden behind it: working ones jiggle and shake token seeds out, ones that need you bounce with
 // a "?", finished ones show a "!", idle ones just sit. Click one to open its session.
+// A session's subagents peek up beside it as its little helpers, a mochi family: each one is tossed
+// out of its parent, shakes out small seeds while its subagent uses tools, and hops home when done.
 // The main window sends the mochis (app.js sendOverlaySettings); token events say how many seeds.
 const S = 3; // pixel scale
 const PITCH = 16; // art px per mochi slot
 const SHOW = 7; // rows of a mochi showing above the taskbar (down to its blush)
+const HP = 8; // art px per helper beside its parent
+const HSHOW = 5; // rows of a helper showing
+const THROW = 0.5; // s, a new helper's toss out of its parent
+const HOP = 0.45; // s, a finished helper's hop home
+const BUSY = 25; // s since its last tool use that a helper still counts as working
 const canvas = document.getElementById('c');
 const g = canvas.getContext('2d');
 const label = document.getElementById('label');
 const bank = new Map(); // tab -> tokens waiting to float up
-let mochis = []; // [{ tab, flavour, activity, bubble, outfit, title }]
+let mochis = []; // [{ tab, flavour, activity, bubble, outfit, title, helpers: [{ id, label }] }]
+const kids = new Map(); // helper id -> { born, lastWork, x, y }: overlay time it showed up, its last tool use, where it was drawn
+let leaving = []; // helpers hopping home: { tab, id, flavour, x, y, t0 }
+const agentTokens = new Map(); // helper id -> the tokens it brings home (SubagentStop)
+const popAt = new Map(); // tab -> when it last threw or took back a helper
 let mainFocused = true;
 let terminalOnly = false;
 let enabled = true;
 let seeds = [];
 let hover = null;
+let hoverKid = null;
+const now = () => performance.now() / 1000;
 
 function resize() {
   canvas.width = Math.round(innerWidth / S);
@@ -54,14 +67,23 @@ const shown = () => !gardenInView() && enabled && mochis.length > 0;
 function clearIfGone() {
   if (!gardenInView()) return;
   bank.clear();
-  hover = null;
+  leaving = [];
+  hover = hoverKid = null;
   label.style.display = 'none';
 }
 
-// Where each mochi sits, in art px: a row along the bottom, centred.
+// Where each mochi sits, in art px: a row along the bottom, centred, each with its helpers
+// lined up to its right.
+const familyWidth = (m) => PITCH + (m.helpers?.length || 0) * HP;
+const rowWidth = () => mochis.reduce((w, m) => w + familyWidth(m), 0);
 function slots() {
-  const x0 = Math.round((canvas.width - mochis.length * PITCH) / 2) + 1;
-  return mochis.map((m, i) => ({ m, x: x0 + i * PITCH, y: canvas.height - SHOW }));
+  let x = Math.round((canvas.width - rowWidth()) / 2) + 1;
+  return mochis.map((m) => {
+    const s = { m, x, y: canvas.height - SHOW, w: familyWidth(m), shaking: false };
+    s.kids = (m.helpers || []).map((h, i) => ({ h, x: s.x + 14 + i * HP, y: canvas.height - HSHOW }));
+    x += s.w;
+    return s;
+  });
 }
 
 // The window ignores the mouse except over a mochi (src/overlay.rs polls the cursor against these).
@@ -70,36 +92,44 @@ let hitsSent = '';
 function sendHits() {
   const d = devicePixelRatio;
   const px = (v) => Math.round(v * d);
-  const rects = shown() ? slots().map((s) => ({ tab: s.m.tab, x: px((s.x - 1) * S), y: px((s.y - 4) * S), w: px(15 * S), h: px((SHOW + 4) * S) })) : [];
+  const rects = shown() ? slots().map((s) => ({ tab: s.m.tab, x: px((s.x - 1) * S), y: px((s.y - 4) * S), w: px((s.w - 1) * S), h: px((SHOW + 4) * S) })) : [];
   const key = JSON.stringify(rects);
   if (key === hitsSent) return;
   hitsSent = key;
-  invoke('overlay_hits', { rects, width: px(mochis.length * PITCH * S + 40) }).catch(() => {});
+  invoke('overlay_hits', { rects, width: px(rowWidth() * S + 40) }).catch(() => {});
 }
 
+// The family under the cursor, and the helper in it if it's over one (which opens its parent's session).
 function slotAt(e) {
   const x = e.clientX / S, y = e.clientY / S;
-  return slots().find((s) => x >= s.x - 1 && x < s.x + 14 && y >= s.y - 4) || null;
+  const s = slots().find((s) => x >= s.x - 1 && x < s.x + s.w - 2 && y >= s.y - 4);
+  if (!s) return null;
+  return { s, kid: s.kids.find((k) => x >= k.x - 0.5 && x < k.x + 7.5) || null };
 }
 canvas.addEventListener('mousemove', (e) => {
-  const s = slotAt(e);
-  hover = s?.m.tab || null;
-  canvas.classList.toggle('hover', !!s);
-  if (s) {
-    label.textContent = s.m.title || 'new session';
+  const at = slotAt(e);
+  hover = at?.s.m.tab || null;
+  hoverKid = at?.kid?.h.id || null;
+  canvas.classList.toggle('hover', !!at);
+  if (at) {
+    const { s, kid } = at;
+    label.textContent = kid ? kid.h.label : s.m.title || 'new session';
     label.style.display = 'block';
     const w = label.offsetWidth;
-    label.style.left = Math.max(2, Math.min(innerWidth - w - 2, (s.x + 6) * S - w / 2)) + 'px';
-    label.style.top = (s.y - 16) * S + 'px';
+    const cx = kid ? kid.x + 3.5 : s.x + 6;
+    label.style.left = Math.max(2, Math.min(innerWidth - w - 2, cx * S - w / 2)) + 'px';
+    label.style.top = (kid ? kid.y - 12 : s.y - 16) * S + 'px';
   } else label.style.display = 'none';
+  wake();
 });
 canvas.addEventListener('mouseleave', () => {
-  hover = null;
+  hover = hoverKid = null;
   label.style.display = 'none';
+  wake();
 });
 canvas.addEventListener('click', (e) => {
-  const s = slotAt(e);
-  if (s) invoke('overlay_open', { tab: s.m.tab }).catch(() => {});
+  const at = slotAt(e);
+  if (at) invoke('overlay_open', { tab: at.s.m.tab }).catch(() => {});
 });
 
 listen('main-focus', ({ payload }) => {
@@ -111,13 +141,21 @@ listen('main-focus', ({ payload }) => {
 listen('overlay-settings', ({ payload }) => {
   enabled = payload.enabled;
   terminalOnly = !!payload.terminalOnly;
+  const before = mochis;
   mochis = payload.mochis || [];
+  meetHelpers(before);
   clearIfGone();
   sendHits();
   wake();
 });
 listen('claude-hook', ({ payload: e }) => {
   if (e.delta > 0 && !e.first) add(e.tab, e.delta);
+  const id = e.raw?.agent_id;
+  if (id && (e.event === 'PreToolUse' || e.event === 'PostToolUse')) {
+    const k = kids.get(id);
+    if (k) k.lastWork = now();
+  }
+  if (id && e.event === 'SubagentStop' && e.agent_tokens > 0) agentTokens.set(id, e.agent_tokens);
   wake();
 });
 listen('tokens', ({ payload: e }) => {
@@ -131,12 +169,31 @@ function add(tab, n) {
   if (!gardenInView() && enabled && n > 0) bank.set(tab, (bank.get(tab) || 0) + n);
 }
 
-function spawn(slot) {
+// New helpers get tossed out of their parent; ones that have dropped off the list (their subagent
+// stopped) hop home, if their parent is still here and we're on screen.
+function meetHelpers(before) {
+  const t = now();
+  const live = new Set(mochis.flatMap((m) => (m.helpers || []).map((h) => h.id)));
+  const tabs = new Set(mochis.map((m) => m.tab));
+  for (const m of before) {
+    for (const h of m.helpers || []) {
+      const k = kids.get(h.id);
+      if (live.has(h.id) || !k) continue;
+      kids.delete(h.id);
+      if (shown() && tabs.has(m.tab) && k.x != null) leaving.push({ tab: m.tab, id: h.id, flavour: m.flavour, x: k.x, y: k.y, t0: t });
+    }
+  }
+  for (const id of live) if (!kids.has(id)) kids.set(id, { born: shown() ? t : -1e9, lastWork: t });
+  for (const m of mochis) if ((m.helpers || []).some((h) => kids.get(h.id)?.born === t)) popAt.set(m.tab, t);
+}
+
+function spawn(slot, at, small) {
   const r = Math.random();
   const f = FLAVOURS[slot.m.flavour] || FLAVOURS.terracotta;
   seeds.push({
-    x: slot.x + 4 + Math.random() * 4,
-    y: slot.y - 1,
+    small,
+    x: at ? at.x + 2 + Math.random() * 2 : slot.x + 4 + Math.random() * 4,
+    y: at ? at.y - 1 : slot.y - 1,
     vy: -(38 + Math.random() * 26),
     sway: Math.random() * 6,
     swayAmp: 2 + Math.random() * 5,
@@ -152,7 +209,11 @@ const acc = new Map();
 let last = performance.now();
 let running = false;
 function busy() {
-  return seeds.length > 0 || (shown() && mochis.some((m) => m.activity === 'working' || m.bubble || bank.get(m.tab) > 0));
+  if (seeds.length > 0 || leaving.length > 0) return true;
+  if (!shown()) return false;
+  const t = now();
+  if ([...kids.values()].some((k) => t - k.born < THROW || t - k.lastWork < BUSY)) return true;
+  return mochis.some((m) => m.activity === 'working' || m.bubble || bank.get(m.tab) > 0);
 }
 function wake() {
   if (running) return;
@@ -182,7 +243,29 @@ function frame(now) {
     }
     acc.set(tab, a);
     s.shaking = rate > 0.5;
+    // busy helpers trickle out small seeds of their own
+    for (const k of s.kids) {
+      const st = kids.get(k.h.id);
+      if (!st || t - st.born < THROW || t - st.lastWork >= BUSY) continue;
+      let ka = (acc.get(k.h.id) || 0) + 1.5 * dt;
+      while (ka >= 1) {
+        ka -= 1;
+        if (seeds.length < 200) spawn(s, k, true);
+      }
+      acc.set(k.h.id, ka);
+    }
   }
+  // finished helpers hop home and merge back in, bringing their tokens as a burst of seeds
+  leaving = leaving.filter((l) => {
+    const home = row.find((s) => s.m.tab === l.tab);
+    if (!home) return false;
+    if (t - l.t0 < HOP) return true;
+    popAt.set(l.tab, t);
+    add(l.tab, agentTokens.get(l.id) || 0);
+    agentTokens.delete(l.id);
+    acc.delete(l.id);
+    return false;
+  });
   g.clearRect(0, 0, canvas.width, canvas.height);
   seeds = seeds.filter((s) => t - s.born < s.life);
   for (const s of seeds) {
@@ -191,10 +274,13 @@ function frame(now) {
     s.y += s.vy * dt;
     const x = Math.round(s.x + Math.sin(age * 3 + s.sway) * s.swayAmp * Math.min(1, age));
     g.globalAlpha = Math.max(0, Math.min(1, (s.life - age) / (s.life * 0.4)));
-    gem(x, Math.round(s.y), s.colour);
+    if (s.small) speck(x, Math.round(s.y), s.colour);
+    else gem(x, Math.round(s.y), s.colour);
   }
   g.globalAlpha = 1;
+  for (const l of leaving) drawHopper(l, row.find((s) => s.m.tab === l.tab), t);
   row.forEach((s, i) => drawPeeker(s, t, i));
+  row.forEach((s) => s.kids.forEach((k, j) => drawKid(s, k, t, j)));
   if (!busy()) {
     running = false; // a still frame stays up; an event wakes it
     return;
@@ -209,7 +295,8 @@ function drawPeeker(s, t, i) {
   let x = s.x, y = s.y;
   if (s.shaking) x += Math.sin(t * 60 + i) > 0 ? 1 : 0; // vibrating the seeds out
   if (m.bubble === '?') y -= Math.round(Math.abs(Math.sin(t * 5 + i)) * 3); // needs you: bouncing
-  if (hover === m.tab) y -= 1;
+  if (hover === m.tab && !hoverKid) y -= 1;
+  if (t - (popAt.get(m.tab) || -9) < 0.12) y -= 1; // a hop as it throws or takes back a helper
   const o = m.outfit || {};
   for (const slot of WEAR_ORDER.under) if (o[slot] && WEAR[o[slot].i]) drawWear(g, o[slot].i, o[slot].c, x, y, 'idle');
   g.drawImage(mochiSprite(m.flavour, 'idle'), x, y);
@@ -218,6 +305,46 @@ function drawPeeker(s, t, i) {
     const bob = m.bubble === '!' && Math.sin(t * 4) > 0 ? 1 : 0;
     g.drawImage(prop(m.bubble === '?' ? 'ask' : 'bang', m.bubble === '?' ? BUBBLE_ASK : BUBBLE_BANG), x + 8, y - 11 - bob);
   }
+}
+
+// A helper: tossed out in an arc, then peeking up beside its parent, jiggling while it works.
+function drawKid(s, k, t, j) {
+  const st = kids.get(k.h.id);
+  if (!st) return;
+  let x = k.x, y = k.y;
+  const age = t - st.born;
+  if (age < THROW) {
+    const p = age / THROW, x0 = s.x + 4, y0 = s.y - 2;
+    x = Math.round(x0 + (k.x - x0) * p);
+    y = Math.round(y0 + (k.y - y0) * p - Math.sin(p * Math.PI) * 10);
+  } else if (age < THROW + 0.2) y -= Math.round(Math.sin(((age - THROW) / 0.2) * Math.PI) * 2); // pops up on landing
+  else if (t - st.lastWork < BUSY) {
+    if (Math.sin(t * 9 + j * 1.7) > 0.4) y -= 1;
+    if (Math.sin(t * 50 + j) > 0.6) x += 1;
+  }
+  if (hoverKid === k.h.id) y -= 1;
+  [st.x, st.y] = [x, y];
+  g.drawImage(miniSprite(s.m.flavour), x, y);
+  if (age < THROW && Math.sin(t * 30) > 0) {
+    g.fillStyle = '#ffffff';
+    g.fillRect(x - 1, y - 1, 1, 1);
+  }
+}
+
+// A finished helper hopping back into its parent.
+function drawHopper(l, s, t) {
+  if (!s) return;
+  const p = Math.min(1, (t - l.t0) / HOP), tx = s.x + 3, ty = s.y + 2;
+  const x = Math.round(l.x + (tx - l.x) * p);
+  const y = Math.round(l.y + (ty - l.y) * p - Math.sin(p * Math.PI) * 7);
+  g.drawImage(miniSprite(l.flavour), x, y);
+}
+
+function speck(x, y, colour) {
+  g.fillStyle = colour;
+  g.fillRect(x, y, 2, 2);
+  g.fillStyle = '#ffffff';
+  g.fillRect(x, y, 1, 1);
 }
 
 function gem(x, y, colour) {

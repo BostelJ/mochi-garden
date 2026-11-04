@@ -7,19 +7,9 @@ import { Garden, PLOT_H, TILE, toWorld } from './garden.js';
 import { noteWeekTokens } from './harvest.js';
 import { Sound, tone } from './rewards.js';
 import { SEED_CAP, Seeds, spawnSeed } from './seeds.js';
-import { FLAVOURS, OUTLINE, gridCanvas, spriteCache } from './sprites.js';
+import { miniSprite } from './sprites.js';
 
-export const MINI = ['..ooo..', '.obbbo.', 'obebebo', 'opbbbpo', 'obbbbso', '.ossso.', '..ooo..'];
 export const HELPER_GRAVITY = 420;
-
-export function miniSprite(flavour) {
-  const key = 'mini:' + flavour;
-  if (spriteCache.has(key)) return spriteCache.get(key);
-  const f = FLAVOURS[flavour] || FLAVOURS.terracotta;
-  const c = gridCanvas(MINI, (ch) => ({ o: OUTLINE, b: f.b, s: f.s, p: f.p, e: OUTLINE })[ch]);
-  spriteCache.set(key, c);
-  return c;
-}
 
 // PreToolUse(Agent) tells us what the agent is for; SubagentStart follows with its id.
 /** @param {Plot} p */

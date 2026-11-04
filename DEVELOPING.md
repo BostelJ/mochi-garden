@@ -35,7 +35,9 @@ within 8 minutes of a mochi finishing builds a streak (`ui/rewards.js`): x3 gold
 trails and a glowing plot, x8 every colour. Seeds pop with pitched sounds ([ sound ] cycles some / all / mute; some is only the ding when a session finishes). While
 the window is in the background, every open session's mochi peeks up over the taskbar above the
 tray (on a Mac, from the screen's bottom edge in the corner beside the Dock) (`ui/overlay.html`, [ tray ] toggle): working ones jiggle and shake seeds out, a "?" bounces
-when one needs you, "!" when one is done. Clicking a mochi opens its session (the window lets
+when one needs you, "!" when one is done. A session's subagents peek up beside it as its little
+helpers (a mochi family): tossed out of it, shaking out small seeds while they use tools, hopping
+home when they finish. Clicking a mochi or a helper opens its session (the window lets
 clicks through except over a mochi: `src/overlay.rs` polls the cursor against the page's rects,
 in screen px). The taskbar button glows while mochis work.
 Usage is the garden's water: each tab's status line (curl to `/status/<tab>`) reports Claude Code's

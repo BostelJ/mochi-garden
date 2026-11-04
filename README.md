@@ -18,7 +18,8 @@ a reply, right there in the garden.
 Off in another app? Your mochis peek up over the taskbar (on a Mac, from the bottom corner of the
 screen beside the Dock) to keep you posted. Busy ones shake out
 seeds, and the one waiting on you bounces with a `?` until you notice. Click it and you're straight
-back in that session.
+back in that session. A session running subagents brings its whole family: each helper peeks up beside
+the mochi that sent it, and hops home when its job's done.
 
 ![Mochis peeking over the Windows taskbar, shaking out seeds, one with a ! and one with a ?](docs/media/taskbar.gif)
 
