@@ -67,7 +67,13 @@ SubagentStop brings it home with its transcript's tokens.
   replaces Ctrl for the app's keys: Cmd+C/V, Cmd+click, Cmd+T/W, Cmd+1..9. App keys: Ctrl+Shift+T new, Ctrl+Shift+W end, Ctrl+Tab / Ctrl+Shift+Tab,
   Ctrl+1..9. Closing asks: keep running in the tray, or quit; open sessions come back on launch.
 - `[ terminal only ]` or Ctrl+Shift+Enter (Cmd+Shift+Enter on a Mac) hides the garden and fills the
-  window with the terminal, under one row of sessions. The mochis carry on unseen: the garden still
+  window with the terminal, with the sessions down a garden path on the left (`ui/sidebar.js`):
+  grouped by project folder, each a sprout pot in its own colour with its git branch (`git_branch`
+  in lib.rs reads `.git/HEAD`), sessions hanging off a vine as their mochi faces (hopping while
+  working, `?`/`!` bubbles), a line for what each is doing (`p.doing`, from PreToolUse), subagents
+  as tiny helpers under them, and the usage bars under a strip of grass. A bar above the terminal
+  names the session and its folder. Narrow windows shrink the path to a column of faces; click a
+  project to fold it. The mochis carry on unseen: the garden still
   updates but isn't drawn (`Garden.covered`), and they peek up in the overlay even while the window
   is in front (with `[ tray ]` on). The choice is remembered across launches.
 - Click a mochi for its card (`ui/cards.js`): allow/deny a permission, pick a question's answer, or

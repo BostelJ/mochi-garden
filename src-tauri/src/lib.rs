@@ -168,6 +168,38 @@ fn set_free_time(state: tauri::State<AppState>, on: bool) {
     state.free_time.store(on, std::sync::atomic::Ordering::Relaxed);
 }
 
+/// The git branch a folder is on (terminal only's sidebar), read straight from .git: the nearest
+/// .git up from the folder, following a worktree's "gitdir:" file. A detached HEAD is its short hash.
+#[tauri::command]
+fn git_branch(cwd: String) -> Option<String> {
+    branch_of(std::path::Path::new(&cwd))
+}
+
+fn branch_of(start: &std::path::Path) -> Option<String> {
+    let mut dir = Some(start);
+    while let Some(d) = dir {
+        let dot = d.join(".git");
+        let git = if dot.is_dir() {
+            dot
+        } else if dot.is_file() {
+            let text = std::fs::read_to_string(&dot).ok()?;
+            let rel = text.trim().strip_prefix("gitdir:")?.trim().to_string();
+            let p = PathBuf::from(&rel);
+            if p.is_absolute() { p } else { d.join(p) }
+        } else {
+            dir = d.parent();
+            continue;
+        };
+        let head = std::fs::read_to_string(git.join("HEAD")).ok()?;
+        let head = head.trim();
+        return Some(match head.strip_prefix("ref: ") {
+            Some(r) => r.strip_prefix("refs/heads/").unwrap_or(r).to_string(),
+            None => head.chars().take(7).collect(),
+        });
+    }
+    None
+}
+
 /// Dev switches for automated runs: MOCHI_AUTOSTART=1 opens a session on launch and
 /// MOCHI_TEST_PROMPT types a prompt into it.
 #[tauri::command]
@@ -241,7 +273,8 @@ pub fn run() {
             overlay::overlay_open,
             update::apply_update,
             mcp::garden_reply,
-            set_free_time
+            set_free_time,
+            git_branch
         ])
         .build(context)
         .expect("error while building Mochi Garden");
@@ -276,4 +309,26 @@ pub fn run() {
         }
         _ => {}
     });
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn a_branch_is_read_from_the_nearest_git_folder() {
+        let root = std::env::temp_dir().join(format!("mochi-branch-{}", std::process::id()));
+        let sub = root.join("src").join("deep");
+        std::fs::create_dir_all(&sub).unwrap();
+        std::fs::create_dir_all(root.join(".git")).unwrap();
+        std::fs::write(root.join(".git/HEAD"), "ref: refs/heads/steal-a-house\n").unwrap();
+        assert_eq!(super::branch_of(&sub).as_deref(), Some("steal-a-house"));
+        // a worktree: .git is a file pointing at its own git folder
+        let wt = root.join("wt");
+        let wt_git = root.join(".git/worktrees/wt");
+        std::fs::create_dir_all(&wt).unwrap();
+        std::fs::create_dir_all(&wt_git).unwrap();
+        std::fs::write(wt.join(".git"), format!("gitdir: {}\n", wt_git.display())).unwrap();
+        std::fs::write(wt_git.join("HEAD"), "0123456789abcdef\n").unwrap();
+        assert_eq!(super::branch_of(&wt).as_deref(), Some("0123456"));
+        let _ = std::fs::remove_dir_all(&root);
+    }
 }

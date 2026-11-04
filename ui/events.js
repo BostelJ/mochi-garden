@@ -8,6 +8,7 @@ import { helperDone, helperWorked, noteAgentCall, spawnHelper } from './helpers.
 import { save } from './persist.js';
 import { bumpStreak } from './rewards.js';
 import { chime, renderList, switchSession, updateTaskbar } from './sessions.js';
+import { doingOf } from './sidebar.js';
 import { tabs, ui } from './state.js';
 import { invoke } from './tauri.js';
 
@@ -29,6 +30,8 @@ export function onHook(ev) {
   // waiting with a "!"), so it only wakes the helper.
   if (raw.agent_id && (ev.event === 'PreToolUse' || ev.event === 'PostToolUse')) {
     helperWorked(p, raw.agent_id, now);
+    const h = (p.helpers || []).find((x) => x.id === raw.agent_id);
+    if (h) h.doing = ev.event === 'PreToolUse' ? doingOf(raw.tool_name, raw.tool_input) : 'thinking…';
     if (ev.tokens != null) applyTokens(p, ev.tokens, ev.first || p.adopting);
     p.adopting = false;
     return;
@@ -48,6 +51,7 @@ export function onHook(ev) {
       if (!p.title && raw.prompt) p.title = raw.prompt.replace(/\s+/g, ' ').trim().slice(0, 40);
       bumpStreak(p);
       p.activity = 'working';
+      p.doing = 'thinking…';
       p.bubble = null;
       break;
     case 'SubagentStart':
@@ -59,11 +63,13 @@ export function onHook(ev) {
     case 'PreToolUse':
       if (raw.tool_name === 'Agent') noteAgentCall(p, raw.tool_input);
       p.activity = 'working';
+      p.doing = doingOf(raw.tool_name, raw.tool_input);
       p.bubble = raw.tool_name === 'AskUserQuestion' ? '?' : null;
       if (p.bubble) chime('ask');
       break;
     case 'PostToolUse':
       p.activity = 'working';
+      p.doing = 'thinking…';
       if (p.bubble === '?') p.bubble = null;
       break;
     case 'PermissionRequest':
@@ -82,6 +88,7 @@ export function onHook(ev) {
       p.built = true;
       p.activity = 'idle';
       p.lastStop = Date.now();
+      p.doing = null;
       if (ui.activeTab !== ev.tab || !document.hasFocus()) {
         p.bubble = '!';
         chime('done');

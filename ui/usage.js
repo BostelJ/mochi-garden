@@ -64,8 +64,8 @@ export function checkResets(t) {
 
 // The side panel's line: two smooth bars of what's left, coloured like the sky they stand for.
 export function renderUsageBar() {
-  const el = document.getElementById('usage');
-  if (!el) return;
+  const els = ['usage', 'path-usage'].map((id) => document.getElementById(id)).filter(Boolean);
+  if (!els.length) return;
   const when = (w, long) => {
     if (!w?.resetsAt) return '';
     const d = new Date(w.resetsAt * 1000);
@@ -85,5 +85,6 @@ export function renderUsageBar() {
       `${pct}%<span class="when">${resets}</span></span>`
     );
   };
-  el.innerHTML = part('five', '5h', fiveColour()) + part('week', 'week', seasonColour());
+  const html = part('five', '5h', fiveColour()) + part('week', 'week', seasonColour());
+  for (const el of els) el.innerHTML = html;
 }

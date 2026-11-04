@@ -9,11 +9,12 @@ import { checkHarvest } from './harvest.js';
 import { load, restoreIds, save } from './persist.js';
 import { Sound, nextSoundMode, setPref } from './rewards.js';
 import { closeTab, markSeen, newSession, pickPlot, resendOverlay, renderList, select, sendAway, sendOverlaySettings, showTerminalOnly, syncSize, toggleTerminalOnly } from './sessions.js';
-import { $, FreeTime, Quality, Tray, plots, tabOfPlot, tabs, ui } from './state.js';
+import { $, FreeTime, Quality, TerminalOnly, Tray, plots, tabOfPlot, tabs, ui } from './state.js';
 import { emitTo, invoke, listen } from './tauri.js';
 import { onAppShortcut, onCloseRequested } from './terminal.js';
 import { onUpdateFailed, onUpdateReady, watchForUpdates } from './update.js';
 import { onUsage, renderUsageBar } from './usage.js';
+import { renderPath } from './sidebar.js';
 
 // Every module's exports on window.mochi, for poking at the garden from the devtools console
 // (tools/console.py), e.g. mochi.plots or mochi.buildPieces(...).
@@ -40,7 +41,8 @@ import * as m_social from './social.js';
 import * as m_sky from './sky.js';
 import * as m_desk from './desk.js';
 import * as m_update from './update.js';
-/** @type {any} */ (globalThis).mochi = Object.assign({}, m_build, m_cards, m_demo, m_events, m_farm, m_garden, m_harvest, m_persist, m_pieces, m_rewards, m_sessions, m_sprites, m_state, m_terminal, m_town, m_usage, m_wardrobe, m_helpers, m_seeds, m_social, m_sky, m_desk, m_update);
+import * as m_sidebar from './sidebar.js';
+/** @type {any} */ (globalThis).mochi = Object.assign({}, m_build, m_cards, m_demo, m_events, m_farm, m_garden, m_harvest, m_persist, m_pieces, m_rewards, m_sessions, m_sprites, m_state, m_terminal, m_town, m_usage, m_wardrobe, m_helpers, m_seeds, m_social, m_sky, m_desk, m_update, m_sidebar);
 
 async function main() {
   await load();
@@ -143,6 +145,7 @@ async function main() {
   await listen('update-ready', onUpdateReady);
   await listen('update-failed', onUpdateFailed);
   setInterval(checkHarvest, 30000);
+  setInterval(() => TerminalOnly.on && renderPath(), 30000); // the sidebar's "4m ago"s tick over
   setTimeout(checkHarvest, 5000);
   renderUsageBar();
   renderList();

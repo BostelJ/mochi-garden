@@ -47,6 +47,8 @@ interface Plot {
   pending?: Pending | null;
   pendingAgents?: string[];
   helpers?: Helper[];
+  /** what it's doing right now, in a few words (sidebar.js doingOf) */
+  doing?: string | null;
   effort?: number;
   seedAcc?: number;
   burst?: any;

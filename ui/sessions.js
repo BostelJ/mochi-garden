@@ -8,6 +8,7 @@ import { Sound, setPref, tone } from './rewards.js';
 import { FLAVOUR_ORDER, mochiSprite } from './sprites.js';
 import { $, TerminalOnly, Tray, plots, tabOfPlot, tabs, ui, uuid } from './state.js';
 import { emitTo, invoke } from './tauri.js';
+import { renderPath } from './sidebar.js';
 import { IS_MAC, makeTerminal } from './terminal.js';
 
 export function nextFlavour() {
@@ -182,6 +183,7 @@ export function showTerminalOnly() {
   const on = TerminalOnly.on;
   if (on) closeCard();
   $('#app').classList.toggle('terminal-only', on);
+  renderPath();
   setGardenCovered(on);
   const btn = $('#terminal-only');
   const keys = IS_MAC ? 'Cmd+Shift+Enter' : 'Ctrl+Shift+Enter';
@@ -297,6 +299,7 @@ export function renderList() {
     list.appendChild(li);
   }
   $('#count').textContent = `SESSIONS (${tabs.size})`;
+  renderPath();
   sendOverlaySettings();
   $('#empty').classList.toggle('hidden', tabs.size > 0);
 }
