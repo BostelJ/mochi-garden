@@ -5,6 +5,7 @@
 // line for what it's doing right now. A session's subagents hang off it as its tiny helpers.
 // Above the terminal, a bar says which session you're in and where.
 
+import { AgentView, closeAgent, openAgent } from './agentview.js';
 import { closeTab, newSession, select, statusOf, toggleTerminalOnly } from './sessions.js';
 import { FLAVOURS, FLAVOUR_ORDER, OUTLINE, gridCanvas, miniSprite, mochiSprite } from './sprites.js';
 import { $, tabs, ui } from './state.js';
@@ -254,7 +255,7 @@ function sessionNode(t, last) {
   const kind = kindOf(p);
   const li = el('li', 'node' + (last ? ' last' : ''));
   li.appendChild(el('i', 'leaf'));
-  const row = el('div', `sess ${kind}` + (t.tab === ui.activeTab ? ' active' : ''));
+  const row = el('div', `sess ${kind}` + (t.tab === ui.activeTab && !AgentView ? ' active' : ''));
   row.style.setProperty('--fl', (FLAVOURS[p.flavour] || FLAVOURS.terracotta).b);
   row.appendChild(faceOf(p, kind));
   row.appendChild(el('span', 't', p.name ? `${p.name} · ${p.title || 'new session'}` : p.title || 'new session'));
@@ -278,22 +279,30 @@ function sessionNode(t, last) {
   row.onclick = () => select(t.tab);
   li.appendChild(row);
 
-  // its helpers, still out working
-  const helpers = (p.helpers || []).filter((h) => h.state !== 'returning' && h.state !== 'home');
+  // its helpers: the ones still out working, then the ones finished since the last prompt
+  const out = (p.helpers || []).filter((h) => h.state !== 'returning' && h.state !== 'gone');
+  const back = (p.doneHelpers || []).filter((d) => !out.some((h) => h.id === d.id)).map((d) => ({ ...d, done: true }));
+  /** @type {{ id: string, label: string, done?: boolean, doing?: string }[]} */
+  const helpers = [...out, ...back];
   if (helpers.length) {
     const ul = el('ul', 'vine helpers');
     helpers.forEach((h, i) => {
       const hl = el('li', 'node' + (i === helpers.length - 1 ? ' last' : ''));
       hl.appendChild(el('i', 'leaf'));
-      const hr = el('div', 'sess helper working');
+      const hr = el('div', 'sess helper ' + (h.done ? 'done' : 'working'));
       const face = el('span', 'face');
       const c = spriteCanvas(miniSprite(p.flavour), 7, 7);
-      inStep(c, 'working');
+      if (!h.done) inStep(c, 'working');
       face.appendChild(c);
       hr.appendChild(face);
       hr.appendChild(el('span', 't', h.label || 'helper'));
-      hr.appendChild(el('span', 'doing', h.doing || 'helping out'));
-      hr.onclick = () => select(t.tab);
+      hr.appendChild(el('span', 'doing', h.done ? 'done · click to read' : h.doing || 'helping out'));
+      if (AgentView?.tab === t.tab && AgentView.id === h.id) hr.classList.add('active');
+      hr.title = 'Show what this helper is doing (Esc to go back)';
+      hr.onclick = () => {
+        select(t.tab);
+        openAgent(t.tab, h.id);
+      };
       hl.appendChild(hr);
       ul.appendChild(hl);
     });
@@ -384,6 +393,7 @@ function renderTermBar() {
   const t = tabs.get(ui.activeTab);
   if (!t) return;
   const p = t.plot;
+  if (AgentView && AgentView.tab === t.tab) return renderHelperBar(bar, t);
   const kind = kindOf(p);
   bar.appendChild(faceOf(p, kind));
   const text = el('span', 'text');
@@ -394,5 +404,29 @@ function renderTermBar() {
   const word = { asking: 'needs you', done: 'done', ended: 'ended', working: 'working' }[kind] || 'idle';
   const chip = el('span', `chip ${kind}`);
   chip.append(el('i', 'dot'), el('span', '', word));
+  bar.appendChild(chip);
+}
+
+// The bar while a helper's conversation is showing: whose helper, and the way back.
+/** @param {HTMLElement} bar @param {Tab} t */
+function renderHelperBar(bar, t) {
+  const p = t.plot;
+  const h = (p.helpers || []).find((x) => x.id === AgentView.id);
+  const working = !!h && h.state !== 'returning' && h.state !== 'gone';
+  const face = el('span', 'face helper-face' + (working ? ' working' : ''));
+  const c = spriteCanvas(miniSprite(p.flavour), 7, 7);
+  inStep(c, working ? 'working' : '');
+  face.appendChild(c);
+  bar.appendChild(face);
+  const text = el('span', 'text');
+  text.appendChild(el('span', 't', AgentView.label));
+  text.appendChild(el('span', 'where', `a helper of ${p.name || p.title || 'new session'} · read-only`));
+  bar.appendChild(text);
+  const back = el('button', 'back', '[ back ]');
+  back.title = 'Back to the session (Esc)';
+  back.onclick = () => closeAgent();
+  bar.appendChild(back);
+  const chip = el('span', `chip ${working ? 'working' : 'done'}`);
+  chip.append(el('i', 'dot'), el('span', '', working ? (h.doing || 'working') : 'done'));
   bar.appendChild(chip);
 }

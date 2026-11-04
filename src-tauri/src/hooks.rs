@@ -287,6 +287,84 @@ pub fn find_transcript(session_id: &str) -> Option<PathBuf> {
     std::fs::read_dir(projects).ok()?.flatten().map(|d| d.path().join(&name)).find(|p| p.is_file())
 }
 
+/// A subagent's transcript: ~/.claude/projects/*/<session>/subagents/agent-<id>.jsonl.
+pub fn find_agent_transcript(session_id: &str, agent_id: &str) -> Option<PathBuf> {
+    let ok = |s: &str| !s.is_empty() && s.chars().all(|c| c.is_ascii_alphanumeric() || c == '-');
+    if !ok(session_id) || !ok(agent_id) {
+        return None;
+    }
+    let projects = dirs::home_dir()?.join(".claude").join("projects");
+    let rel = PathBuf::from(session_id).join("subagents").join(format!("agent-{agent_id}.jsonl"));
+    std::fs::read_dir(projects).ok()?.flatten().map(|d| d.path().join(&rel)).find(|p| p.is_file())
+}
+
+/// A subagent's conversation from byte `from` on (terminal only's helper view, ui/agentview.js):
+/// its user and assistant messages, with long tool output cut short, and where to read on from.
+pub fn agent_log(session_id: &str, agent_id: &str, from: u64) -> Value {
+    match find_agent_transcript(session_id, agent_id) {
+        Some(path) => agent_log_at(&path, from),
+        None => json!({ "missing": true, "next": from }),
+    }
+}
+
+pub fn agent_log_at(path: &Path, from: u64) -> Value {
+    let mut buf = Vec::new();
+    let read = std::fs::File::open(path).and_then(|mut f| {
+        f.seek(SeekFrom::Start(from))?;
+        f.read_to_end(&mut buf)
+    });
+    if read.is_err() {
+        return json!({ "missing": true, "next": from });
+    }
+    // only whole lines: a line still being written is read next time
+    let end = buf.iter().rposition(|&b| b == b'\n').map_or(0, |i| i + 1);
+    let mut entries = Vec::new();
+    for line in String::from_utf8_lossy(&buf[..end]).lines() {
+        let Ok(mut e) = serde_json::from_str::<Value>(line) else { continue };
+        let kind = e["type"].as_str().unwrap_or("").to_string();
+        if kind != "user" && kind != "assistant" {
+            continue;
+        }
+        if let Some(items) = e["message"]["content"].as_array_mut() {
+            for item in items.iter_mut() {
+                if item["type"] == "tool_result" {
+                    item["content"] = json!(clip(&tool_text(&item["content"]), 600));
+                } else if item["type"] == "tool_use" && item["name"] == "SubagentHandback" {
+                    // its report: the part worth reading, kept (within reason)
+                    let msg = item["input"]["message"].as_str().unwrap_or("").to_string();
+                    item["input"] = json!({ "message": clip(&msg, 8000)["text"] });
+                } else if item["type"] == "tool_use" {
+                    let input = item["input"].to_string();
+                    if input.len() > 2000 {
+                        item["input"] = json!({ "summary": clip(&input, 400) });
+                    }
+                } else if item["type"] == "thinking" || item["type"] == "redacted_thinking" {
+                    *item = json!({ "type": "thinking" });
+                }
+            }
+        }
+        entries.push(json!({ "type": kind, "content": e["message"]["content"].take() }));
+    }
+    json!({ "entries": entries, "next": from + end as u64 })
+}
+
+fn tool_text(v: &Value) -> String {
+    match v {
+        Value::String(s) => s.clone(),
+        Value::Array(items) => items.iter().filter_map(|i| i["text"].as_str()).collect::<Vec<_>>().join("\n"),
+        _ => String::new(),
+    }
+}
+
+/// The first `n` bytes of a string (on a character boundary), and how many lines it had in all.
+fn clip(s: &str, n: usize) -> Value {
+    let mut cut = s.len().min(n);
+    while !s.is_char_boundary(cut) {
+        cut -= 1;
+    }
+    json!({ "text": &s[..cut], "lines": s.lines().count(), "more": cut < s.len() })
+}
+
 /// A transcript from a session's short id (its first 8 characters, as background jobs are named):
 /// (full session id, path), the newest if more than one matches.
 pub fn find_transcript_prefix(short: &str) -> Option<(String, PathBuf)> {
@@ -474,6 +552,30 @@ mod tests {
         let mut scan = Scan::default();
         scan.read(&path);
         assert_eq!(scan.title.as_deref(), Some("Steal a House"));
+        let _ = std::fs::remove_file(&path);
+    }
+
+    #[test]
+    fn a_helpers_conversation_is_read_a_little_at_a_time() {
+        let path = std::env::temp_dir().join(format!("mochi-agent-{}.jsonl", std::process::id()));
+        let mut f = std::fs::File::create(&path).unwrap();
+        writeln!(f, r#"{{"type":"user","message":{{"role":"user","content":"Find the chart library"}}}}"#).unwrap();
+        writeln!(f, r#"{{"type":"attachment"}}"#).unwrap();
+        let long = "line\n".repeat(500);
+        writeln!(f, "{}", json!({"type":"user","message":{"content":[{"type":"tool_result","content":long}]}})).unwrap();
+        write!(f, r#"{{"type":"assistant","message":{{"content":[{{"type":"text","text":"half a li"#).unwrap();
+        drop(f);
+        let first = agent_log_at(&path, 0);
+        let entries = first["entries"].as_array().unwrap();
+        assert_eq!(entries.len(), 2); // the attachment is skipped, the half-written line waits
+        assert_eq!(entries[0]["content"], "Find the chart library");
+        let result = &entries[1]["content"][0]["content"];
+        assert_eq!(result["lines"], 500);
+        assert_eq!(result["more"], true);
+        assert!(result["text"].as_str().unwrap().len() <= 600);
+        // nothing new until the line is finished
+        let next = first["next"].as_u64().unwrap();
+        assert_eq!(agent_log_at(&path, next)["entries"].as_array().unwrap().len(), 0);
         let _ = std::fs::remove_file(&path);
     }
 

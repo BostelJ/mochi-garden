@@ -168,6 +168,12 @@ fn set_free_time(state: tauri::State<AppState>, on: bool) {
     state.free_time.store(on, std::sync::atomic::Ordering::Relaxed);
 }
 
+/// A subagent's conversation, from byte `from` on (hooks::agent_log).
+#[tauri::command]
+fn agent_log(session_id: String, agent_id: String, from: u64) -> serde_json::Value {
+    hooks::agent_log(&session_id, &agent_id, from)
+}
+
 /// The git branch a folder is on (terminal only's sidebar), read straight from .git: the nearest
 /// .git up from the folder, following a worktree's "gitdir:" file. A detached HEAD is its short hash.
 #[tauri::command]
@@ -274,7 +280,8 @@ pub fn run() {
             update::apply_update,
             mcp::garden_reply,
             set_free_time,
-            git_branch
+            git_branch,
+            agent_log
         ])
         .build(context)
         .expect("error while building Mochi Garden");

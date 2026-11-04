@@ -42,7 +42,8 @@ import * as m_sky from './sky.js';
 import * as m_desk from './desk.js';
 import * as m_update from './update.js';
 import * as m_sidebar from './sidebar.js';
-/** @type {any} */ (globalThis).mochi = Object.assign({}, m_build, m_cards, m_demo, m_events, m_farm, m_garden, m_harvest, m_persist, m_pieces, m_rewards, m_sessions, m_sprites, m_state, m_terminal, m_town, m_usage, m_wardrobe, m_helpers, m_seeds, m_social, m_sky, m_desk, m_update, m_sidebar);
+import * as m_agentview from './agentview.js';
+/** @type {any} */ (globalThis).mochi = Object.assign({}, m_build, m_cards, m_demo, m_events, m_farm, m_garden, m_harvest, m_persist, m_pieces, m_rewards, m_sessions, m_sprites, m_state, m_terminal, m_town, m_usage, m_wardrobe, m_helpers, m_seeds, m_social, m_sky, m_desk, m_update, m_sidebar, m_agentview);
 
 async function main() {
   await load();

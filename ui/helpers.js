@@ -56,6 +56,8 @@ export function helperDone(p, id, tokens, t) {
   }
   h.state = 'returning';
   h.tokens = tokens || 0;
+  // finished, but its conversation can still be read from the garden path until the next prompt
+  p.doneHelpers = [...(p.doneHelpers || []).filter((x) => x.id !== id), { id, label: h.label }].slice(-8);
 }
 
 // Subagent tokens live in their own transcripts, so they're tracked beside the main count.

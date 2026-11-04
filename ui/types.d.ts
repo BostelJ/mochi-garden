@@ -47,6 +47,8 @@ interface Plot {
   pending?: Pending | null;
   pendingAgents?: string[];
   helpers?: Helper[];
+  /** subagents finished since the last prompt, still listed in terminal only's path */
+  doneHelpers?: { id: string; label: string }[];
   /** what it's doing right now, in a few words (sidebar.js doingOf) */
   doing?: string | null;
   effort?: number;

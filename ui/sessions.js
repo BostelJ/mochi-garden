@@ -8,6 +8,7 @@ import { Sound, setPref, tone } from './rewards.js';
 import { FLAVOUR_ORDER, mochiSprite } from './sprites.js';
 import { $, TerminalOnly, Tray, plots, tabOfPlot, tabs, ui, uuid } from './state.js';
 import { emitTo, invoke } from './tauri.js';
+import { AgentView, closeAgent } from './agentview.js';
 import { renderPath } from './sidebar.js';
 import { IS_MAC, makeTerminal } from './terminal.js';
 
@@ -39,6 +40,7 @@ export function sendAway(p) {
   p.bubble = null;
   p.selected = false;
   p.helpers = [];
+  p.doneHelpers = [];
   if (Cards.plot === p) closeCard();
   // never got a prompt: it wanders off without planting anything
   if (p.x == null) return dropPlot(p);
@@ -139,6 +141,7 @@ export async function newSession(resumePlot, cwd) {
 export function closeTab(tab) {
   const t = tabs.get(tab);
   if (!t) return;
+  if (AgentView?.tab === tab) closeAgent(true);
   invoke('pty_kill', { tab }).catch(() => {});
   t.term.dispose();
   t.el.remove();
@@ -161,6 +164,7 @@ export function syncSize(t) {
 }
 
 export function select(tab) {
+  closeAgent(true); // a helper's conversation gives way to the session picked
   ui.activeTab = tab;
   for (const [id, t] of tabs) {
     const on = id === tab;

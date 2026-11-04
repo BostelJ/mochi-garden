@@ -52,6 +52,9 @@ export function onHook(ev) {
       bumpStreak(p);
       p.activity = 'working';
       p.doing = 'thinking…';
+      // a real prompt starts a new piece of work; a helper's hand-back or a background task's
+      // notice arrives as a prompt too (<agent-message>, <task-notification>) and doesn't
+      if (!/^\s*</.test(raw.prompt || '')) p.doneHelpers = [];
       p.bubble = null;
       break;
     case 'SubagentStart':

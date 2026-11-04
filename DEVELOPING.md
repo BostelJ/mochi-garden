@@ -71,7 +71,10 @@ SubagentStop brings it home with its transcript's tokens.
   grouped by project folder, each a sprout pot in its own colour with its git branch (`git_branch`
   in lib.rs reads `.git/HEAD`), sessions hanging off a vine as their mochi faces (hopping while
   working, `?`/`!` bubbles), a line for what each is doing (`p.doing`, from PreToolUse), subagents
-  as tiny helpers under them, and the usage bars under a strip of grass. A bar above the terminal
+  as tiny helpers under them (click one to read its conversation in the terminal's place,
+  live and read-only: `ui/agentview.js`, `agent_log` in hooks.rs reads
+  `<session>/subagents/agent-<id>.jsonl`; finished helpers stay listed until your next prompt),
+  and the usage bars under a strip of grass. A bar above the terminal
   names the session and its folder. Narrow windows shrink the path to a column of faces; click a
   project to fold it. The mochis carry on unseen: the garden still
   updates but isn't drawn (`Garden.covered`), and they peek up in the overlay even while the window
