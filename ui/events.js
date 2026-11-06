@@ -4,7 +4,7 @@
 import { notePending } from './cards.js';
 import { placePlot } from './garden.js';
 import { noteWeekTokens } from './harvest.js';
-import { helperDone, helperWorked, noteAgentCall, spawnHelper } from './helpers.js';
+import { endedAgents, helperDone, helperEnded, helperWorked, noteAgentCall, spawnHelper } from './helpers.js';
 import { save } from './persist.js';
 import { bumpStreak } from './rewards.js';
 import { chime, renderList, switchSession, updateTaskbar } from './sessions.js';
@@ -55,6 +55,7 @@ export function onHook(ev) {
       // a real prompt starts a new piece of work; a helper's hand-back or a background task's
       // notice arrives as a prompt too (<agent-message>, <task-notification>) and doesn't
       if (!/^\s*</.test(raw.prompt || '')) p.doneHelpers = [];
+      for (const id of endedAgents(raw.prompt)) helperEnded(p, id, now);
       p.bubble = null;
       break;
     case 'SubagentStart':

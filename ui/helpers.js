@@ -60,6 +60,27 @@ export function helperDone(p, id, tokens, t) {
   p.doneHelpers = [...(p.doneHelpers || []).filter((x) => x.id !== id), { id, label: h.label }].slice(-8);
 }
 
+// A helper whose SubagentStop never came: its subagent died (an API error ends it without the
+// hook), so the end shows only as the parent's <task-notification> for it, or as nothing at all.
+export const HELPER_STALE = 45 * 60; // seconds with no tool use inside it
+
+/** Sends a helper home if it's still out (unlike helperDone, keeps any tokens SubagentStop gave). @param {Plot} p */
+export function helperEnded(p, id, t) {
+  const h = p.helpers && p.helpers.find((x) => x.id === id);
+  if (h && (h.state === 'thrown' || h.state === 'working')) helperDone(p, id, 0, t);
+}
+
+/** The ids of agents a prompt says have stopped (completed, failed or killed task notices). */
+export function endedAgents(prompt) {
+  const ids = [];
+  for (const m of (prompt || '').matchAll(/<task-notification>([\s\S]*?)<\/task-notification>/g)) {
+    const id = /<task-id>\s*([^<\s]+)\s*<\/task-id>/.exec(m[1]);
+    const status = /<status>\s*([^<\s]+)\s*<\/status>/.exec(m[1]);
+    if (id && status && status[1] !== 'running') ids.push(id[1]);
+  }
+  return ids;
+}
+
 // Subagent tokens live in their own transcripts, so they're tracked beside the main count.
 /** @param {Plot} p */
 export function addAgentTokens(p, n) {
@@ -84,6 +105,10 @@ export function updateHelpers(p, dt, t) {
         h.poppedAt = t;
       }
     } else if (h.state === 'working') {
+      if (t - h.lastWork > HELPER_STALE) {
+        helperDone(p, h.id, 0, t);
+        continue;
+      }
       // busy while its subagent is using tools: a little trickle of its own seeds
       if (t - h.lastWork < 25) {
         h.acc += dt * 1.5;
