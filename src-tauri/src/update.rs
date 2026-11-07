@@ -86,7 +86,32 @@ async fn install_release(app: AppHandle, update: tauri_plugin_updater::Update) {
         let _ = app.emit_to("main", "update-failed", e.to_string());
         return;
     }
+    keep_identity(&app);
     app.restart();
+}
+
+/// The name of the certificate `tools/mac-signing-cert.sh` makes and `npm run ship` signs with.
+const LOCAL_IDENTITY: &str = "Mochi Garden Local";
+
+/// macOS ties Screen Recording (and the other privacy grants) to the app's signature. Releases are
+/// signed ad hoc, a new identity every build, so each one would ask again; on a Mac with the local
+/// certificate a release is signed again with it, so every install, release or `npm run ship`, is
+/// the same app to macOS and the grant sticks. Without the certificate this does nothing.
+fn keep_identity(app: &AppHandle) {
+    if !cfg!(target_os = "macos") {
+        return;
+    }
+    let Some(bundle) = install_target().filter(|p| p.extension().is_some_and(|e| e == "app")) else { return };
+    let out = std::process::Command::new("/usr/bin/codesign")
+        .args(["--force", "--deep", "--sign", LOCAL_IDENTITY])
+        .arg(&bundle)
+        .stdin(std::process::Stdio::null())
+        .output();
+    match out {
+        Ok(o) if o.status.success() => log(app, &format!("signed {} with {LOCAL_IDENTITY}", bundle.display())),
+        Ok(o) => log(app, &format!("kept the release's own signature: {}", String::from_utf8_lossy(&o.stderr).trim())),
+        Err(e) => log(app, &format!("kept the release's own signature: {e}")),
+    }
 }
 
 /// Where `npm run ship` finds the running app (and, once it has quit, what it should replace).
