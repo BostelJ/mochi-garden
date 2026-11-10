@@ -26,7 +26,7 @@ pub fn setup(app: &AppHandle) -> tauri::Result<()> {
         _ => {}
     });
     // In a Mac menu bar the icon is a template image that macOS tints for a light or dark bar
-    // (tools/icon_mac.mjs draws it).
+    // (tools/icon.mjs draws it).
     #[cfg(target_os = "macos")]
     let icon = tauri::image::Image::from_bytes(include_bytes!("../icons/tray-mac.png")).ok().or(icon);
     #[cfg(target_os = "macos")]

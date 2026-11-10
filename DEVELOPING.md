@@ -82,8 +82,9 @@ SubagentStop brings it home with its transcript's tokens.
 - Click a mochi for its card (`ui/cards.js`): allow/deny a permission, pick a question's answer, or
   reply in place. Idle mochis visit neighbours and the town square (`ui/social.js`, `ui/town.js`),
   which grows with the garden's lifetime tokens; each week ends with a harvest summary (`ui/harvest.js`).
-- Icons: `tools/icon.py <png>` draws the Windows one; `node tools/icon_mac.mjs` writes the Mac's
-  `icon.icns` and its menu bar template icon (`tray-mac.png`).
+- Icons: `node tools/icon.mjs` draws them all from the sprite grids: the app icon (the mochi as the
+  cursor of a terminal prompt) as the Mac's `icon.icns`, Windows' `icon.ico` and the PNGs, plus the
+  Mac's menu bar template icon (`tray-mac.png`). Run it on a Mac: only there is `icon.icns` written.
 - Art in `ui/art/` comes from approved concept sheets, sampled back to true pixels: crops by
   `tools/extract_crops.py`; the desk, typewriter frames, fence pieces and lantern post by
   `tools/extract_sprites.py` (cuts every object out, measuring the fake-pixel size from outlines).
