@@ -17,6 +17,15 @@ Nothing reaches anyone until you publish the draft:
 3. Press **Publish release**. Within a few hours every installed Mochi Garden finds it (it checks
    about 20 seconds after launch and every 6 hours), and it installs once their mochis are idle.
 
+Or publish it from a terminal: write the notes in a file and push them as an annotated tag.
+`.github/workflows/publish.yml` checks the draft's downloads, sets the notes, publishes it and
+deletes the tag.
+
+```
+git tag -a publish-v0.2.0 -F notes.md
+git push origin publish-v0.2.0
+```
+
 Your own copy keeps working the way it always has (`npm run ship` installs a local build
 straight away). Published releases reach it too.
 

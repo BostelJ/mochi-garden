@@ -1,0 +1,57 @@
+# Publishes the draft release of a version from a terminal: the same as pressing "Publish release"
+# on GitHub. Push an annotated tag publish-v<version> whose message is the release notes:
+#   git tag -a publish-v0.2.0 -F notes.md && git push origin publish-v0.2.0
+# It checks that the draft holds every download and that latest.json names this version and all
+# three platforms, then sets the notes, publishes the draft as the latest release and deletes the
+# publish tag. If a check fails nothing is published; the publish tag stays, so delete it
+# (git push origin :publish-v0.2.0) before trying again.
+name: Publish
+
+on:
+  push:
+    tags: ['publish-v*']
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      TAG: ${{ github.ref_name }}
+    steps:
+      - name: Publish the draft
+        run: |
+          set -euo pipefail
+          release="${TAG#publish-}"   # v0.2.0
+          version="${release#v}"      # 0.2.0
+
+          # the notes: the message of the annotated tag
+          ref=$(gh api "repos/$GH_REPO/git/ref/tags/$TAG")
+          if [ "$(jq -r .object.type <<<"$ref")" != tag ]; then
+            echo "::error::$TAG has no message. Make it with: git tag -a $TAG -F notes.md"; exit 1
+          fi
+          gh api "repos/$GH_REPO/git/tags/$(jq -r .object.sha <<<"$ref")" --jq .message > notes.md
+          [ -s notes.md ] || { echo "::error::$TAG has an empty message"; exit 1; }
+
+          # the draft and its downloads
+          info=$(gh release view "$release" --json isDraft,assets)
+          if [ "$(jq -r .isDraft <<<"$info")" != true ]; then
+            echo "::error::$release is already published"; exit 1
+          fi
+          names=$(jq -r '.assets[].name' <<<"$info")
+          echo "$names"
+          for want in 'latest\.json' '.*\.dmg' '.*-setup\.exe' '.*-setup\.exe\.sig' '.*\.app\.tar\.gz' '.*\.app\.tar\.gz\.sig'; do
+            grep -qx "$want" <<<"$names" || { echo "::error::the draft has no file like $want"; exit 1; }
+          done
+
+          # latest.json is what installed apps read
+          gh release download "$release" --pattern latest.json
+          jq -e --arg v "$version" '.version == $v
+            and (.platforms | has("windows-x86_64") and has("darwin-aarch64") and has("darwin-x86_64"))' latest.json > /dev/null \
+            || { echo "::error::latest.json is not for $version on Windows and both Macs"; cat latest.json; exit 1; }
+
+          gh release edit "$release" --notes-file notes.md --draft=false --latest
+          gh api -X DELETE "repos/$GH_REPO/git/refs/tags/$TAG"
