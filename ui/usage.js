@@ -1,6 +1,7 @@
 // Your Claude usage, read from Claude Code's status line (rate_limits) and remembered across
 // launches. The garden shows it as sky (sky.js): the 5-hour window is the time of day, the week is
-// the season. The side panel shows the exact numbers as two smooth bars.
+// the season. The side panel shows the exact numbers as two smooth bars. A plan with no 5-hour
+// limit has only the week: no 5-hour bar, and the sky stays a calm late morning.
 
 import { fiveColour, seasonColour } from './sky.js';
 
@@ -14,8 +15,11 @@ export function loadUsage() {
   }
 }
 
-// rate_limits: { five_hour: { used_percentage, resets_at }, seven_day: {...} }
+// rate_limits: { five_hour: { used_percentage, resets_at }, seven_day: {...} }. A plan with no
+// 5-hour limit reports the week alone: the 5-hour window remembered from before is then forgotten.
 export function onUsage(limits, t) {
+  const has = (key) => limits[key]?.used_percentage != null;
+  if (has('seven_day') && !has('five_hour')) delete Usage.five;
   for (const [key, name] of [['five_hour', 'five'], ['seven_day', 'week']]) {
     const w = limits[key];
     if (!w || w.used_percentage == null) continue;
@@ -66,6 +70,11 @@ export function checkResets(t) {
 export function renderUsageBar() {
   const els = ['usage', 'path-usage'].map((id) => document.getElementById(id)).filter(Boolean);
   if (!els.length) return;
+  const html = usageBarHtml();
+  for (const el of els) el.innerHTML = html;
+}
+
+export function usageBarHtml() {
   const when = (w, long) => {
     if (!w?.resetsAt) return '';
     const d = new Date(w.resetsAt * 1000);
@@ -85,6 +94,7 @@ export function renderUsageBar() {
       `${pct}%<span class="when">${resets}</span></span>`
     );
   };
-  const html = part('five', '5h', fiveColour()) + part('week', 'week', seasonColour());
-  for (const el of els) el.innerHTML = html;
+  // Only the week known: a plan with no 5-hour limit, so no 5-hour bar.
+  const five = current('five') || !current('week') ? part('five', '5h', fiveColour()) : '';
+  return five + part('week', 'week', seasonColour());
 }

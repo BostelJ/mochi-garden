@@ -29,7 +29,8 @@ export const SEASONS = [
 
 export const Sky = { particles: [], grassKey: null };
 
-// With no numbers yet, it's a calm late-morning spring day.
+// With no numbers yet it's a calm late-morning spring day (and always late morning on a plan with
+// no 5-hour limit).
 export function fiveLeft() {
   return current('five') ? left('five') : 0.65;
 }

@@ -44,7 +44,7 @@ Usage is the garden's water: each tab's status line (curl to `/status/<tab>`) re
 `rate_limits` (`ui/usage.js`). The garden shows them as sky (`ui/sky.js`): what's left of the 5-hour
 window is the time of day (morning → golden hour → dusk → night with fireflies and lanterns; a reset
 is a sunrise) and what's left of the week is the season (spring → summer → autumn → winter; a reset
-is a burst of spring petals). The side panel shows both as smooth bars. Subagents are helper mochis (`ui/helpers.js`): SubagentStart throws a
+is a burst of spring petals). The side panel shows both as smooth bars. A plan with no 5-hour limit reports only the week: the 5-hour bar goes and the sky stays late morning. Subagents are helper mochis (`ui/helpers.js`): SubagentStart throws a
 piece of the parent onto the grass below its plot, tool use inside the subagent keeps it busy, and
 SubagentStop brings it home with its transcript's tokens.
 
