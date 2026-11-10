@@ -7,6 +7,7 @@ use std::sync::atomic::{AtomicU32, AtomicU8, Ordering};
 use std::sync::Mutex;
 
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
+#[cfg(not(target_os = "macos"))]
 use tauri::window::{ProgressBarState, ProgressBarStatus};
 use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize, UserAttentionType, WebviewUrl, WebviewWindowBuilder};
 
@@ -146,13 +147,17 @@ pub fn place(app: &AppHandle) {
     let _ = overlay.set_position(PhysicalPosition::new(x, bottom - h));
 }
 
-/// Taskbar button: an indeterminate progress glow while any mochi works; a flash when one
-/// needs you and the window isn't focused.
+/// Taskbar button: an indeterminate progress glow while any mochi works (Windows only: on a
+/// Mac the same call draws an empty grey track under the Dock icon, which reads as a glitch);
+/// a flash, or a Dock bounce, when one needs you and the window isn't focused.
 #[tauri::command]
 pub fn taskbar_state(app: AppHandle, working: bool, attention: bool) {
     let Some(main) = app.get_webview_window("main") else { return };
-    let status = if working { ProgressBarStatus::Indeterminate } else { ProgressBarStatus::None };
-    let _ = main.set_progress_bar(ProgressBarState { status: Some(status), progress: None });
+    #[cfg(not(target_os = "macos"))]
+    {
+        let status = if working { ProgressBarStatus::Indeterminate } else { ProgressBarStatus::None };
+        let _ = main.set_progress_bar(ProgressBarState { status: Some(status), progress: None });
+    }
     if attention && !main.is_focused().unwrap_or(false) {
         let _ = main.request_user_attention(Some(UserAttentionType::Informational));
     }

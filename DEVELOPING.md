@@ -39,7 +39,7 @@ when one needs you, "!" when one is done. A session's subagents peek up beside i
 helpers (a mochi family): tossed out of it, shaking out small seeds while they use tools, hopping
 home when they finish. Clicking a mochi or a helper opens its session (the window lets
 clicks through except over a mochi: `src/overlay.rs` polls the cursor against the page's rects,
-in screen px). The taskbar button glows while mochis work.
+in screen px). The taskbar button glows while mochis work (Windows; the Dock icon has no such state).
 Usage is the garden's water: each tab's status line (curl to `/status/<tab>`) reports Claude Code's
 `rate_limits` (`ui/usage.js`). The garden shows them as sky (`ui/sky.js`): what's left of the 5-hour
 window is the time of day (morning → golden hour → dusk → night with fireflies and lanterns; a reset
