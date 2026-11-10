@@ -35,7 +35,8 @@ openssl req -x509 -newkey rsa:2048 -nodes -days 3650 -config "$dir/cert.conf" \
   -keyout "$dir/key.pem" -out "$dir/cert.pem" 2>/dev/null
 openssl pkcs12 -export -inkey "$dir/key.pem" -in "$dir/cert.pem" -name "$NAME" \
   -out "$dir/cert.p12" -passout "pass:$pass"
-# -T: codesign may use the key without asking each time.
+# -T lets codesign use the key, but macOS still asks in a dialog until "Always Allow" is chosen.
 security import "$dir/cert.p12" -P "$pass" -T /usr/bin/codesign >/dev/null
 
 echo "Made $NAME in your login keychain."
+echo "The first time codesign asks to use its key, choose Always Allow: an update signs with it unattended."

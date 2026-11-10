@@ -8,8 +8,9 @@
 //    new build where this one lives, and starts it again.
 
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use axum::extract::State;
 use axum::http::StatusCode;
@@ -25,11 +26,19 @@ pub struct Update {
     pub pending: Mutex<Option<PathBuf>>,
     /// A newer release found by the updater.
     pub release: Mutex<Option<tauri_plugin_updater::Update>>,
+    /// A release is installing. It isn't looked for, offered or started again meanwhile: a second
+    /// install over the first left the app half signed, and macOS wouldn't open it.
+    pub installing: AtomicBool,
 }
 
 impl Update {
     pub fn new() -> Self {
-        Update { token: uuid::Uuid::new_v4().to_string(), pending: Mutex::new(None), release: Mutex::new(None) }
+        Update {
+            token: uuid::Uuid::new_v4().to_string(),
+            pending: Mutex::new(None),
+            release: Mutex::new(None),
+            installing: AtomicBool::new(false),
+        }
     }
 }
 
@@ -39,10 +48,13 @@ pub fn watch_releases(app: AppHandle) {
         tokio::time::sleep(Duration::from_secs(20)).await;
         loop {
             let found = match app.updater() {
+                _ if app.state::<Update>().installing.load(Ordering::SeqCst) => Ok(None),
                 Ok(updater) => updater.check().await,
                 Err(e) => Err(e),
             };
             match found {
+                // an install began while this check was out
+                Ok(Some(_)) if app.state::<Update>().installing.load(Ordering::SeqCst) => {}
                 Ok(Some(update)) => {
                     let version = update.version.clone();
                     *app.state::<Update>().release.lock().unwrap() = Some(update);
@@ -73,6 +85,7 @@ async fn install_release(app: AppHandle, update: tauri_plugin_updater::Update) {
         Ok(b) => b,
         Err(e) => {
             log(&app, &format!("download {}: {e}", update.version));
+            app.state::<Update>().installing.store(false, Ordering::SeqCst);
             let _ = app.emit_to("main", "update-failed", e.to_string());
             return;
         }
@@ -83,6 +96,7 @@ async fn install_release(app: AppHandle, update: tauri_plugin_updater::Update) {
     log(&app, &format!("installing {}", update.version));
     if let Err(e) = update.install(bytes) {
         log(&app, &format!("install {}: {e}", update.version));
+        app.state::<Update>().installing.store(false, Ordering::SeqCst);
         let _ = app.emit_to("main", "update-failed", e.to_string());
         return;
     }
@@ -102,15 +116,77 @@ fn keep_identity(app: &AppHandle) {
         return;
     }
     let Some(bundle) = install_target().filter(|p| p.extension().is_some_and(|e| e == "app")) else { return };
-    let out = std::process::Command::new("/usr/bin/codesign")
-        .args(["--force", "--deep", "--sign", LOCAL_IDENTITY])
-        .arg(&bundle)
-        .stdin(std::process::Stdio::null())
-        .output();
-    match out {
-        Ok(o) if o.status.success() => log(app, &format!("signed {} with {LOCAL_IDENTITY}", bundle.display())),
-        Ok(o) => log(app, &format!("kept the release's own signature: {}", String::from_utf8_lossy(&o.stderr).trim())),
+    match sign_with(&bundle, LOCAL_IDENTITY) {
+        Ok(()) => log(app, &format!("signed {} with {LOCAL_IDENTITY}", bundle.display())),
         Err(e) => log(app, &format!("kept the release's own signature: {e}")),
+    }
+}
+
+/// How long codesign may take. It asks for the keychain key in a dialog until "Always Allow" is
+/// chosen, and with nobody there it would wait for good, sessions already ended.
+const SIGN_LIMIT: Duration = Duration::from_secs(60);
+
+/// Sign the bundle with a certificate from the keychain. A copy beside it is signed and takes
+/// its place only once it verifies, so whatever goes wrong (no certificate, a dialog nobody
+/// answers, codesign stopped halfway) the installed app is left as it was and still opens.
+fn sign_with(bundle: &Path, identity: &str) -> Result<(), String> {
+    let run = |program: &str, args: &[&std::ffi::OsStr]| {
+        run_within(std::process::Command::new(program).args(args), SIGN_LIMIT).map_err(|e| format!("{program}: {e}"))
+    };
+    run("/usr/bin/security", &["find-certificate".as_ref(), "-c".as_ref(), identity.as_ref()])
+        .map_err(|_| format!("no {identity} certificate"))?;
+    let name = bundle.file_name().ok_or("no bundle name")?.to_string_lossy();
+    // dot names without .app: not a second Mochi Garden to Finder or Spotlight
+    let staged = bundle.with_file_name(format!(".{name}.signing"));
+    let old = bundle.with_file_name(format!(".{name}.unsigned"));
+    let _ = std::fs::remove_dir_all(&staged);
+    let _ = std::fs::remove_dir_all(&old);
+    let signed = (|| {
+        run("/bin/cp", &["-R".as_ref(), bundle.as_os_str(), staged.as_os_str()])?;
+        run("/usr/bin/codesign", &["--force".as_ref(), "--deep".as_ref(), "--sign".as_ref(), identity.as_ref(), staged.as_os_str()])?;
+        run("/usr/bin/codesign", &["--verify".as_ref(), "--deep".as_ref(), "--strict".as_ref(), staged.as_os_str()])?;
+        std::fs::rename(bundle, &old).map_err(|e| e.to_string())?;
+        if let Err(e) = std::fs::rename(&staged, bundle) {
+            let _ = std::fs::rename(&old, bundle);
+            return Err(e.to_string());
+        }
+        Ok(())
+    })();
+    let _ = std::fs::remove_dir_all(&staged);
+    let _ = std::fs::remove_dir_all(&old);
+    signed
+}
+
+/// Run a command to its end, or stop it at the limit. Err carries what it wrote to stderr.
+fn run_within(command: &mut std::process::Command, limit: Duration) -> Result<(), String> {
+    use std::io::Read;
+    use std::process::Stdio;
+    let mut child = command
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::piped())
+        .spawn()
+        .map_err(|e| e.to_string())?;
+    let started = Instant::now();
+    loop {
+        match child.try_wait() {
+            Ok(Some(status)) if status.success() => return Ok(()),
+            Ok(Some(status)) => {
+                let mut err = String::new();
+                if let Some(mut pipe) = child.stderr.take() {
+                    let _ = pipe.read_to_string(&mut err);
+                }
+                let err = err.trim();
+                return Err(if err.is_empty() { status.to_string() } else { err.to_string() });
+            }
+            Ok(None) if started.elapsed() >= limit => {
+                let _ = child.kill();
+                let _ = child.wait();
+                return Err(format!("no answer in {} seconds", limit.as_secs()));
+            }
+            Ok(None) => std::thread::sleep(Duration::from_millis(100)),
+            Err(e) => return Err(e.to_string()),
+        }
     }
 }
 
@@ -165,8 +241,11 @@ pub async fn post(State(app): State<AppHandle>, Json(req): Json<Request>) -> (St
 pub fn apply_update(app: AppHandle, hidden: bool) -> Result<(), String> {
     let local = app.state::<Update>().pending.lock().unwrap().clone();
     let Some(new) = local else {
-        let release = app.state::<Update>().release.lock().unwrap().take().ok_or("no update waiting")?;
-        tauri::async_runtime::spawn(install_release(app.clone(), release));
+        let up = app.state::<Update>();
+        let release = up.release.lock().unwrap().take().ok_or("no update waiting")?;
+        if !up.installing.swap(true, Ordering::SeqCst) {
+            tauri::async_runtime::spawn(install_release(app.clone(), release));
+        }
         return Ok(());
     };
     let target = install_target().ok_or("can't tell where Mochi Garden is installed")?;
@@ -251,4 +330,72 @@ pub fn start_hidden(app: &AppHandle) {
 /// Builds staged for earlier updates are spent once the app has started again.
 pub fn clear_staged(data_dir: &Path) {
     let _ = std::fs::remove_dir_all(data_dir.join("update"));
+}
+
+#[cfg(all(test, target_os = "macos"))]
+mod tests {
+    use super::*;
+
+    /// A stand-in bundle: a real program under Contents/MacOS, so codesign has something to sign.
+    fn bundle(tag: &str) -> PathBuf {
+        let root = std::env::temp_dir().join(format!("mochi-sign-{tag}-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        let app = root.join("Mochi Test.app");
+        std::fs::create_dir_all(app.join("Contents/MacOS")).unwrap();
+        std::fs::copy("/bin/ls", app.join("Contents/MacOS/mochi-test")).unwrap();
+        let plist = r#"<?xml version="1.0" encoding="UTF-8"?>
+<plist version="1.0"><dict>
+<key>CFBundleExecutable</key><string>mochi-test</string>
+<key>CFBundleIdentifier</key><string>com.mochigarden.test</string>
+<key>CFBundlePackageType</key><string>APPL</string>
+</dict></plist>"#;
+        std::fs::write(app.join("Contents/Info.plist"), plist).unwrap();
+        app
+    }
+
+    fn names(dir: &Path) -> Vec<String> {
+        let mut v: Vec<_> = std::fs::read_dir(dir).unwrap().map(|e| e.unwrap().file_name().to_string_lossy().into_owned()).collect();
+        v.sort();
+        v
+    }
+
+    #[test]
+    fn a_command_that_never_ends_is_stopped() {
+        let started = Instant::now();
+        let out = run_within(std::process::Command::new("/bin/sleep").arg("30"), Duration::from_millis(300));
+        assert_eq!(out.unwrap_err(), "no answer in 0 seconds");
+        assert!(started.elapsed() < Duration::from_secs(5));
+        let out = run_within(std::process::Command::new("/bin/ls").arg("/no/such/folder"), Duration::from_secs(5));
+        assert!(out.unwrap_err().contains("No such file"));
+    }
+
+    #[test]
+    fn without_the_certificate_the_app_is_left_alone() {
+        let app = bundle("none");
+        let exe = app.join("Contents/MacOS/mochi-test");
+        let before = std::fs::read(&exe).unwrap();
+        let out = sign_with(&app, "Mochi Garden No Such Certificate");
+        assert_eq!(out.unwrap_err(), "no Mochi Garden No Such Certificate certificate");
+        assert!(std::fs::read(&exe).unwrap() == before);
+        assert_eq!(names(app.parent().unwrap()), ["Mochi Test.app"]);
+        let _ = std::fs::remove_dir_all(app.parent().unwrap());
+    }
+
+    /// Needs the certificate from tools/mac-signing-cert.sh, and may ask for the keychain key:
+    /// `cargo test --lib --manifest-path src-tauri/Cargo.toml -- --ignored`
+    #[test]
+    #[ignore]
+    fn the_local_certificate_signs_every_architecture() {
+        let app = bundle("local");
+        sign_with(&app, LOCAL_IDENTITY).unwrap();
+        assert_eq!(names(app.parent().unwrap()), ["Mochi Test.app"]);
+        for arch in ["arm64", "x86_64"] {
+            let exe = app.join("Contents/MacOS/mochi-test");
+            let check = std::process::Command::new("/usr/bin/codesign").args(["--verify", "--strict", "--arch", arch]).arg(&exe).output().unwrap();
+            assert!(check.status.success(), "{arch}: {}", String::from_utf8_lossy(&check.stderr));
+            let shown = std::process::Command::new("/usr/bin/codesign").args(["-dvv", "--arch", arch]).arg(&exe).output().unwrap();
+            assert!(String::from_utf8_lossy(&shown.stderr).contains("Authority=Mochi Garden Local"), "{arch}");
+        }
+        let _ = std::fs::remove_dir_all(app.parent().unwrap());
+    }
 }
