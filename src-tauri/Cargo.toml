@@ -1,6 +1,6 @@
 [package]
 name = "mochi-garden"
-version = "0.1.6"
+version = "0.1.7"
 description = "Mochi Garden: your Claude Code sessions as a growing pixel garden"
 license = "MIT"
 edition = "2021"
