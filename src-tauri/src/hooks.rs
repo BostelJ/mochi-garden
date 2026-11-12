@@ -249,10 +249,12 @@ async fn status(State(app): State<AppHandle>, UrlPath(tab): UrlPath<String>, Jso
         let _ = app.emit("usage", json!({ "tab": tab, "rate_limits": limits }));
     }
     let left = |w: &str| limits[w]["used_percentage"].as_f64().map(|u| format!("{:.0}% left", (100.0 - u).max(0.0)));
+    // the per-model weekly windows (Fable's) aren't in the status line's input: the app's own
+    // live check has them (usage.rs)
     match (left("five_hour"), left("seven_day")) {
-        (Some(a), Some(b)) => format!("5h {a} · week {b}"),
-        (Some(a), None) => format!("5h {a}"),
-        (None, Some(b)) => format!("week {b}"),
+        (Some(a), Some(b)) => format!("5h {a} · week {b}{}", crate::usage::models_line()),
+        (Some(a), None) => format!("5h {a}{}", crate::usage::models_line()),
+        (None, Some(b)) => format!("week {b}{}", crate::usage::models_line()),
         _ => String::new(),
     }
 }

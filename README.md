@@ -47,6 +47,9 @@ One key (Cmd+Shift+Enter on a Mac, Ctrl+Shift+Enter on Windows) tucks the garden
 terminal the whole window. Your mochis don't go anywhere: they line up down a little garden path on
 the left, grouped by project, each with its git branch. Busy ones hop and say what they're up to, the
 one that needs you holds up a `?`, and a finished one a `!`. Subagents tag along underneath.
+Under the grass at the bottom: a little calendar of your days, greener the more tokens you used
+(hover a day for the split by model), and what's left of your limits: the 5-hour window, the week,
+and Fable's own weekly allowance, with a mark when you're holding an unused limit reset.
 
 ![Terminal only: sessions down a garden path on the left, grouped by project, one sending out a helper, one finishing with a !, one asking with a ?](docs/media/terminal-only.gif)
 

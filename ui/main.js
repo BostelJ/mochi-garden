@@ -13,7 +13,8 @@ import { $, FreeTime, Quality, TerminalOnly, Tray, plots, tabOfPlot, tabs, ui } 
 import { emitTo, invoke, listen } from './tauri.js';
 import { onAppShortcut, onCloseRequested } from './terminal.js';
 import { onUpdateFailed, onUpdateReady, watchForUpdates } from './update.js';
-import { onUsage, renderUsageBar } from './usage.js';
+import { onUsage, onLiveUsage, renderUsageBar } from './usage.js';
+import { onDays } from './calendar.js';
 import { renderPath } from './sidebar.js';
 
 // Every module's exports on window.mochi, for poking at the garden from the devtools console
@@ -34,6 +35,7 @@ import * as m_state from './state.js';
 import * as m_terminal from './terminal.js';
 import * as m_town from './town.js';
 import * as m_usage from './usage.js';
+import * as m_calendar from './calendar.js';
 import * as m_wardrobe from './wardrobe.js';
 import * as m_helpers from './helpers.js';
 import * as m_seeds from './seeds.js';
@@ -43,7 +45,7 @@ import * as m_desk from './desk.js';
 import * as m_update from './update.js';
 import * as m_sidebar from './sidebar.js';
 import * as m_agentview from './agentview.js';
-/** @type {any} */ (globalThis).mochi = Object.assign({}, m_build, m_cards, m_demo, m_events, m_farm, m_garden, m_harvest, m_persist, m_pieces, m_rewards, m_sessions, m_sprites, m_state, m_terminal, m_town, m_usage, m_wardrobe, m_helpers, m_seeds, m_social, m_sky, m_desk, m_update, m_sidebar, m_agentview);
+/** @type {any} */ (globalThis).mochi = Object.assign({}, m_build, m_cards, m_demo, m_events, m_farm, m_garden, m_harvest, m_persist, m_pieces, m_rewards, m_sessions, m_sprites, m_state, m_terminal, m_town, m_usage, m_calendar, m_wardrobe, m_helpers, m_seeds, m_social, m_sky, m_desk, m_update, m_sidebar, m_agentview);
 
 async function main() {
   await load();
@@ -137,7 +139,12 @@ async function main() {
   // a session using its garden tools (build.js, src/mcp.rs)
   await listen('garden-call', ({ payload }) => onGardenCall(payload));
   document.fonts?.ready.then(() => tabs.forEach((t) => syncSize(t)));
-  await listen('usage', ({ payload }) => onUsage(payload.rate_limits, performance.now() / 1000));
+  await listen('usage', ({ payload }) => onUsage(payload.rate_limits, performance.now() / 1000, payload.tab));
+  // the app's own live check (Fable's window, the unused reset) and the day record (usage.rs)
+  await listen('usage-live', ({ payload }) => onLiveUsage(payload, performance.now() / 1000));
+  await listen('days', ({ payload }) => onDays(payload));
+  invoke('usage_live').then((v) => onLiveUsage(v, performance.now() / 1000)).catch(() => {});
+  invoke('usage_days').then(onDays).catch(() => {});
   await listen('close-requested', onCloseRequested);
   // a mochi peeking over the taskbar was clicked (overlay.html), or the overlay (re)loaded
   await listen('overlay-ready', resendOverlay);

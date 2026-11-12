@@ -7,6 +7,7 @@ mod mcp;
 mod overlay;
 mod pty;
 mod update;
+mod usage;
 
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -257,6 +258,7 @@ pub fn run() {
             update::write_info(&app.state::<AppState>().data_dir, port, &app.state::<update::Update>().token);
             update::start_hidden(app.handle());
             update::watch_releases(app.handle().clone());
+            usage::start(app.handle().clone());
             if let Err(e) = overlay::setup(app.handle()) {
                 eprintln!("tray overlay unavailable: {e}");
             }
@@ -281,7 +283,9 @@ pub fn run() {
             mcp::garden_reply,
             set_free_time,
             git_branch,
-            agent_log
+            agent_log,
+            usage::usage_live,
+            usage::usage_days
         ])
         .build(context)
         .expect("error while building Mochi Garden");

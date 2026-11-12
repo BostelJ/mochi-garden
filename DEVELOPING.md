@@ -44,7 +44,18 @@ Usage is the garden's water: each tab's status line (curl to `/status/<tab>`) re
 `rate_limits` (`ui/usage.js`). The garden shows them as sky (`ui/sky.js`): what's left of the 5-hour
 window is the time of day (morning → golden hour → dusk → night with fireflies and lanterns; a reset
 is a sunrise) and what's left of the week is the season (spring → summer → autumn → winter; a reset
-is a burst of spring petals). The side panel shows both as smooth bars. A plan with no 5-hour limit reports only the week: the 5-hour bar goes and the sky stays late morning. Subagents are helper mochis (`ui/helpers.js`): SubagentStart throws a
+is a burst of spring petals). The side panel shows both as smooth bars. A plan with no 5-hour limit reports only the week: the 5-hour bar goes and the sky stays late morning.
+Each tab's status line repeats what its own claude heard on its last reply, so an idle tab keeps
+reporting old numbers: only a change in a tab's report counts (`lastHeard` in usage.js), and a
+tab's first report counts only when nothing is known. Every 3 minutes the app also asks a headless
+`claude -p --input-format stream-json` for `get_usage` (a control request: no model call, no
+tokens; `src/usage.rs`), which always counts and adds the per-model weekly windows (Fable's bar,
+and a ` · fable N% left` on each tab's status line). Whether you hold an unused limit reset comes
+from `unusedLimitResetStatusCache` in `~/.claude.json` (Claude Code only stores yes or no, checked
+at most every three days). The day calendar under the path's grass (`ui/calendar.js`) comes from
+`usage.rs` too: every transcript under `~/.claude/projects` tallied per UTC hour and model family
+(input + cache writes + output, like the seeds), kept in `usage-days.json` in the data folder so
+days outlive Claude Code's transcript cleanup, re-read every 5 minutes from where each file stopped. Subagents are helper mochis (`ui/helpers.js`): SubagentStart throws a
 piece of the parent onto the grass below its plot, tool use inside the subagent keeps it busy, and
 SubagentStop brings it home with its transcript's tokens.
 

@@ -6,6 +6,7 @@
 // Above the terminal, a bar says which session you're in and where.
 
 import { AgentView, closeAgent, openAgent } from './agentview.js';
+import { renderCalendar } from './calendar.js';
 import { closeTab, newSession, select, statusOf, toggleTerminalOnly } from './sessions.js';
 import { FLAVOURS, FLAVOUR_ORDER, OUTLINE, gridCanvas, miniSprite, mochiSprite } from './sprites.js';
 import { $, tabs, ui } from './state.js';
@@ -332,10 +333,13 @@ function build() {
   const grass = spriteCanvas(grassSprite(), 160, 9);
   grass.className = 'grass';
   const foot = el('div', 'foot');
+  const cal = el('div', '');
+  cal.id = 'path-cal';
   const usage = el('div', '');
   usage.id = 'path-usage';
-  foot.appendChild(usage);
+  foot.append(cal, usage);
   nav.append(head, groups, grass, foot);
+  renderCalendar();
 }
 
 export function renderPath() {

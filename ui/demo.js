@@ -5,7 +5,8 @@ import { Garden, placePlot } from './garden.js';
 import { helperDone, helperWorked, noteAgentCall, spawnHelper } from './helpers.js';
 import { plots, uuid } from './state.js';
 import { emitTo, invoke } from './tauri.js';
-import { Usage, onUsage } from './usage.js';
+import { Usage, onLiveUsage, onUsage } from './usage.js';
+import { onDays } from './calendar.js';
 
 // Dev runs: watch the terminal's output, answer the folder-trust dialog if it shows, and type
 // the test prompt once Claude's input box is up and output has gone quiet.
@@ -71,6 +72,18 @@ export function demoGarden(only) {
   const now = Date.now() / 1000;
   onUsage({ five_hour: { used_percentage: 86, resets_at: now + 3600 * 1.3 }, seven_day: { used_percentage: 38, resets_at: now + 86400 * 3.4 } }, 0);
   setTimeout(() => onUsage({ five_hour: { used_percentage: 3, resets_at: now + 3600 * 5 } }, performance.now() / 1000), 9000);
+  // Fable's own week, an unused reset waiting, and months of days for the calendar.
+  const iso = (s) => new Date(s * 1000).toISOString();
+  onLiveUsage({ rate_limits: { five_hour: { utilization: 86, resets_at: iso(now + 3600 * 1.3) }, seven_day: { utilization: 38, resets_at: iso(now + 86400 * 3.4) }, model_scoped: [{ display_name: 'Fable', utilization: 71, resets_at: iso(now + 86400 * 3.4) }] }, reset: { held: true, checkedAt: Date.now(), validUntil: Date.now() + 86400e3 } }, 0);
+  /** @type {Record<string, Record<string, number>>} */
+  const hours = {};
+  for (let d = 0; d < 140; d++) {
+    if (Math.random() < 0.3) continue;
+    const h = new Date(Date.now() - d * 86400e3).toISOString().slice(0, 13);
+    const big = Math.random() ** 2 * 2e7;
+    hours[h] = { opus: Math.round(big * 0.6), fable: Math.round(big * 0.4) };
+  }
+  onDays(hours);
   // Helpers: the heavy worker throws two, which come home with their tokens a bit later.
   setTimeout(() => {
     const w = plots.find((p) => p.title === 'api rate limiter');

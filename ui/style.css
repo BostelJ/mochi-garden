@@ -157,6 +157,20 @@ button:hover { color: #fff; background: #222; }
 #path-usage .track { flex: 1; height: 5px; background: #2e2924; border-radius: 3px; overflow: hidden; }
 #path-usage .fill { display: block; height: 100%; transition: width 0.8s ease, background 0.8s ease; }
 #path-usage .when { color: #7d7266; min-width: 6.5em; text-align: right; }
+#path-usage .k { min-width: 3.4em; }
+#usage .u.reset, #path-usage .u.reset { color: #b9a6e6; }
+
+/* the day calendar in the soil under the grass: a square a day, greener the busier */
+#path-cal { margin-bottom: 9px; }
+#path-cal .cap { display: flex; justify-content: space-between; font-size: 10px; color: #7d7266; margin-bottom: 4px; }
+#path-cal .cal { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, auto); grid-template-columns: repeat(20, 1fr); gap: 2px; }
+#path-cal .cal i { aspect-ratio: 1; border-radius: 2px; background: #2a2520; }
+#path-cal .cal i.l1 { background: #34502b; }
+#path-cal .cal i.l2 { background: #477a33; }
+#path-cal .cal i.l3 { background: #63a043; }
+#path-cal .cal i.l4 { background: #94cf6b; }
+#path-cal .cal i.today { box-shadow: 0 0 0 1px #efe6da; }
+#path-cal .cal i.future { visibility: hidden; }
 
 /* the bar above the terminal: which session, where, how it's doing */
 #termbar { align-items: center; gap: 10px; padding: 6px 14px 6px 12px; border-bottom: 1px solid var(--line); min-width: 0; }

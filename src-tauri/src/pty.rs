@@ -27,7 +27,7 @@ struct PtyData {
 }
 
 /// claude from PATH, then the native installer's ~/.local/bin, else plain "claude".
-fn claude_path() -> PathBuf {
+pub fn claude_path() -> PathBuf {
     let home = dirs::home_dir().unwrap_or_default();
     let mut dirs: Vec<PathBuf> = std::env::var_os("PATH").map(|p| std::env::split_paths(&p).collect()).unwrap_or_default();
     dirs.extend([home.join(".local/bin"), home.join(".claude/local"), "/opt/homebrew/bin".into(), "/usr/local/bin".into()]);
